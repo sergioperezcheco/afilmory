@@ -9,6 +9,9 @@ export function createDefaultBuilderConfig(): BuilderConfig {
         defaultConcurrency: 10,
         enableLivePhotoDetection: true,
         digestSuffixLength: 0,
+        // 地理编码默认配置
+        enableGeocoding: false, // 默认关闭，需要用户主动启用
+        geocodingProvider: 'auto',
       },
       observability: {
         showProgress: true,

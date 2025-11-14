@@ -9,7 +9,14 @@ import { extractExifData } from '../image/exif.js'
 import { calculateHistogramAndAnalyzeTone } from '../image/histogram.js'
 import { generateThumbnailAndBlurhash, thumbnailExists } from '../image/thumbnail.js'
 import { workdir } from '../path.js'
-import type { PhotoManifestItem, PickedExif, ToneAnalysis } from '../types/photo.js'
+import type { LocationInfo,PhotoManifestItem, PickedExif, ToneAnalysis } from '../types/photo.js'
+import { getPhotoExecutionContext } from './execution-context.js'
+import type {GeocodingProvider} from './geocoding.js';
+import {
+  createGeocodingProvider,
+  extractLocationFromGPS,
+  parseGPSCoordinates
+} from './geocoding.js'
 import { getGlobalLoggers } from './logger-adapter.js'
 import type { PhotoProcessorOptions } from './processor.js'
 
@@ -119,4 +126,98 @@ export async function processToneAnalysis(
 
   // 计算新的影调分析
   return await calculateHistogramAndAnalyzeTone(sharpInstance)
+}
+
+// ============ 地理编码相关 ============
+
+// 坐标缓存（避免重复 API 调用）
+// Key 格式："{lat},{lon}" 精确到小数点后4位（约10米精度）
+const locationCache = new Map<string, LocationInfo | null>()
+
+// 单例提供者（避免重复创建）
+let cachedProvider: GeocodingProvider | null = null
+let lastProviderConfig: string | null = null
+
+/**
+ * 处理位置数据（反向地理编码）
+ * 优先复用现有数据，如果不存在或需要强制更新则进行地理编码
+ */
+export async function processLocationData(
+  exifData: PickedExif | null,
+  photoKey: string,
+  existingItem: PhotoManifestItem | undefined,
+  options: PhotoProcessorOptions,
+): Promise<LocationInfo | null> {
+  const loggers = getGlobalLoggers()
+
+  try {
+    // 获取配置
+    const context = getPhotoExecutionContext()
+    const config = context.builder.getConfig()
+    const processingSettings = config.system.processing
+
+    // 检查是否启用地理编码
+    if (!processingSettings.enableGeocoding) {
+      return null
+    }
+
+    // 检查是否可以复用现有数据
+    if (!options.isForceMode && !options.isForceManifest && existingItem?.location) {
+      const photoId = path.basename(photoKey, path.extname(photoKey))
+      loggers.location.info(`复用现有位置数据：${photoId}`)
+      return existingItem.location
+    }
+
+    // 检查 EXIF 是否包含 GPS 数据
+    if (!exifData) {
+      return null
+    }
+
+    // 解析 GPS 坐标
+    const { latitude, longitude } = parseGPSCoordinates(exifData)
+
+    if (latitude === undefined || longitude === undefined) {
+      return null
+    }
+
+    // 生成缓存 key（精确到小数点后4位）
+    const cacheKey = `${latitude.toFixed(4)},${longitude.toFixed(4)}`
+
+    // 检查缓存
+    if (locationCache.has(cacheKey)) {
+      const cached = locationCache.get(cacheKey)
+      const photoId = path.basename(photoKey, path.extname(photoKey))
+      loggers.location.info(`使用缓存的位置数据：${photoId} (${cacheKey})`)
+      return cached ?? null
+    }
+
+    // 创建或复用地理编码提供者
+    const providerType = processingSettings.geocodingProvider || 'auto'
+    const providerConfigKey = `${providerType}:${processingSettings.mapboxToken || ''}:${processingSettings.nominatimBaseUrl || ''}`
+
+    if (!cachedProvider || lastProviderConfig !== providerConfigKey) {
+      cachedProvider = createGeocodingProvider(
+        providerType,
+        processingSettings.mapboxToken,
+        processingSettings.nominatimBaseUrl,
+      )
+      lastProviderConfig = providerConfigKey
+    }
+
+    if (!cachedProvider) {
+      loggers.location.warn('无法创建地理编码提供者')
+      return null
+    }
+
+    // 调用反向地理编码 API
+    const locationInfo = await extractLocationFromGPS(latitude, longitude, cachedProvider)
+
+    // 缓存结果（包括 null）
+    locationCache.set(cacheKey, locationInfo)
+
+    return locationInfo
+  } catch (error) {
+    loggers.location.error('处理位置数据失败:', error)
+    return null
+  }
 }

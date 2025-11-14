@@ -28,6 +28,19 @@ function applySystemOverrides(target: BuilderConfig['system'], overrides?: Build
     if (processing.supportedFormats) {
       target.processing.supportedFormats = new Set(processing.supportedFormats as Set<string>)
     }
+    // 地理编码配置
+    if (typeof processing.enableGeocoding === 'boolean') {
+      target.processing.enableGeocoding = processing.enableGeocoding
+    }
+    if (processing.geocodingProvider) {
+      target.processing.geocodingProvider = processing.geocodingProvider
+    }
+    if (processing.mapboxToken !== undefined) {
+      target.processing.mapboxToken = processing.mapboxToken
+    }
+    if (processing.nominatimBaseUrl !== undefined) {
+      target.processing.nominatimBaseUrl = processing.nominatimBaseUrl
+    }
   }
 
   if (overrides.observability) {

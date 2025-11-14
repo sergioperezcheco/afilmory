@@ -20,6 +20,11 @@ export interface SystemProcessingSettings {
   enableLivePhotoDetection: boolean
   supportedFormats?: Set<string>
   digestSuffixLength?: number
+  // 地理编码配置
+  enableGeocoding?: boolean
+  geocodingProvider?: 'mapbox' | 'nominatim' | 'auto'
+  mapboxToken?: string
+  nominatimBaseUrl?: string
 }
 
 export interface SystemObservabilitySettings {

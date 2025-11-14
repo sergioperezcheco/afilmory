@@ -16,7 +16,12 @@ import { THUMBNAIL_PLUGIN_DATA_KEY } from '../plugins/thumbnail-storage/shared.j
 import type { PhotoManifestItem, ProcessPhotoResult } from '../types/photo.js'
 import type { S3ObjectLike } from '../types/s3.js'
 import { shouldProcessPhoto } from './cache-manager.js'
-import { processExifData, processThumbnailAndBlurhash, processToneAnalysis } from './data-processors.js'
+import {
+  processExifData,
+  processLocationData,
+  processThumbnailAndBlurhash,
+  processToneAnalysis,
+} from './data-processors.js'
 import { getPhotoExecutionContext } from './execution-context.js'
 import { detectGainMap } from './gainmap-detector.js'
 import { extractPhotoInfo } from './info-extractor.js'
@@ -204,10 +209,13 @@ export async function executePhotoProcessingPipeline(
     // 7. 处理影调分析
     const toneAnalysis = await processToneAnalysis(sharpInstance, photoKey, existingItem, options)
 
-    // 8. 提取照片信息
+    // 8. 处理位置数据（反向地理编码）
+    const location = await processLocationData(exifData, photoKey, existingItem, options)
+
+    // 9. 提取照片信息
     const photoInfo = extractPhotoInfo(photoKey, exifData)
 
-    // 9. 构建照片清单项
+    // 10. 构建照片清单项
     const aspectRatio = metadata.width / metadata.height
     const photoItem: PhotoManifestItem = {
       id: photoId,
@@ -227,6 +235,7 @@ export async function executePhotoProcessingPipeline(
       digest: contentDigest,
       exif: exifData,
       toneAnalysis,
+      location,
       // Video source (Motion Photo or Live Photo)
       video:
         motionPhotoMetadata?.isMotionPhoto && motionPhotoMetadata.motionPhotoOffset !== undefined
