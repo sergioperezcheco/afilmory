@@ -12,6 +12,7 @@
 - **`live-photo-handler.ts`** - Live Photo 检测和处理
 - **`logger-adapter.ts`** - Logger 适配器，实现适配器模式
 - **`info-extractor.ts`** - 照片信息提取
+- **`geocoding.ts`** - 反向地理编码，从 GPS 坐标提取位置信息
 
 ### 设计模式
 
@@ -43,9 +44,10 @@ class CompatibleLoggerAdapter implements PhotoLogger {
 3. 处理缩略图和 blurhash
 4. 处理 EXIF 数据
 5. 处理影调分析
-6. 提取照片信息
-7. 处理 Live Photo
-8. 构建照片清单项
+6. 处理地理编码（从 GPS 坐标反向解析位置信息）
+7. 提取照片信息
+8. 处理 Live Photo
+9. 构建照片清单项
 
 ### 主要改进
 
@@ -53,7 +55,8 @@ class CompatibleLoggerAdapter implements PhotoLogger {
 2. **Logger 适配器**: 使用异步执行上下文管理 logger，避免全局状态污染
 3. **缓存管理**: 统一管理各种数据的缓存和复用逻辑
 4. **Live Photo 处理**: 专门的模块处理 Live Photo 检测和匹配
-5. **类型安全**: 完善的 TypeScript 类型定义
+5. **反向地理编码**: 支持从 GPS 坐标提取位置信息，支持多个地理编码提供商
+6. **类型安全**: 完善的 TypeScript 类型定义
 
 ### 使用方法
 
@@ -80,7 +83,8 @@ const result = await processPhoto(
 #### 单独使用各个模块
 
 ```typescript
-import { processLivePhoto, processThumbnailAndBlurhash, processExifData } from './index.js'
+import { processLivePhoto, processThumbnailAndBlurhash, processExifData, processLocationData } from './index.js'
+import { createGeocodingProvider } from './geocoding.js'
 
 // Live Photo 处理
 const livePhotoResult = processLivePhoto(photoKey, livePhotoMap, builder.getStorageManager())
@@ -90,6 +94,9 @@ const thumbnailResult = await processThumbnailAndBlurhash(imageBuffer, photoId, 
 
 // EXIF 处理
 const exifData = await processExifData(imageBuffer, rawImageBuffer, photoKey, existingItem, options)
+
+// 地理编码处理
+const locationInfo = await processLocationData(exifData, photoKey, existingItem, options)
 ```
 
 ### 扩展性

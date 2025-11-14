@@ -1,7 +1,7 @@
 ---
 title: Overview
 createdAt: 2025-07-20T22:35:03+08:00
-lastModified: 2025-11-14T21:52:55+08:00
+lastModified: 2025-11-15T01:31:13+08:00
 ---
 
 # Overview
@@ -45,6 +45,7 @@ Live Photo Galleries:
 - 🌈 **Blurhash Placeholders** - Elegant image loading experience
 - 📱 **Live Photo Support** - Detection and display of iPhone Live Photos
 - ☀️ **HDR Image Support** - Display HDR images
+- 🌍 **Reverse Geocoding** - Automatic location extraction from GPS coordinates with support for Mapbox and Nominatim providers
 
 ### Advanced Features
 
@@ -126,6 +127,10 @@ This will automatically pull resources from the remote repository, avoiding rebu
 - `enableLivePhotoDetection`: Enable Live Photo detection
 - `digestSuffixLength`: Digest suffix length for deterministic IDs
 - `supportedFormats`: Optional allowlist of file extensions to process
+- `enableGeocoding`: Enable reverse geocoding from GPS coordinates (default: `false`)
+- `geocodingProvider`: Geocoding service provider (`'mapbox'` | `'nominatim'` | `'auto'`, default: `'auto'`)
+- `mapboxToken`: Mapbox access token (required when using Mapbox provider)
+- `nominatimBaseUrl`: Custom Nominatim base URL (optional, defaults to OpenStreetMap's public instance)
 
 #### System Observability (`system.observability`)
 
@@ -137,6 +142,44 @@ This will automatically pull resources from the remote repository, avoiding rebu
 - `performance.worker.workerCount`: Number of worker processes
 - `performance.worker.timeout`: Worker timeout (milliseconds)
 - `performance.worker.useClusterMode`: Enable cluster mode
+
+#### Geocoding Configuration Example
+
+To enable reverse geocoding, configure the geocoding provider in your `builder.config.ts`:
+
+**Using Nominatim (Free, but rate-limited):**
+
+```typescript
+{
+  system: {
+    processing: {
+      enableGeocoding: true,
+      // Optional: use custom Nominatim instance
+      // nominatimBaseUrl: 'https://your-nominatim-instance.com'
+    }
+  }
+}
+
+```
+
+**Using Mapbox:**
+
+```typescript
+{
+  system: {
+    processing: {
+      enableGeocoding: true,
+      mapboxToken: process.env.MAPBOX_TOKEN
+    }
+  }
+}
+```
+
+**Notes:**
+- Mapbox maybe provide higher accuracy and better rate limits but requires an API token
+- Nominatim is free but has strict rate limits (1 request/second)
+- Both providers support intelligent caching to minimize API calls
+- Location data includes country, city, and location name extracted from GPS coordinates
 
 ## 📋 CLI Commands
 
