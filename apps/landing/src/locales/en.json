@@ -1,0 +1,181 @@
+{
+  "Meta": {
+    "title": "Afilmory",
+    "description": "Afilmory curates immersive storytelling experiences for photographers, curators and brands.",
+    "keywords": "Afilmory, photo gallery, photography, showcase"
+  },
+  "Header": {
+    "brand": "Afilmory",
+    "tagline": "Film Archive",
+    "cta": "Get started"
+  },
+  "Hero": {
+    "nav": {
+      "brand": "Afilmory",
+      "tagline": "Nocturne Archive"
+    },
+    "subheading": "Auto Focus · Aperture · Film · Memory",
+    "titleLine1": "Afilmory:",
+    "titleLine2": "Forging focus and memory in the dark",
+    "button": "Enter the archive",
+    "artistNoteLabel": "Artist Note",
+    "artistNote": "\"I bring fragments of daily life into Afilmory, arranging them like a darkroom line. It lets me narrate with light instead of words.\"",
+    "artistSignature": "-- Curator",
+    "preview": {
+      "imageAlt": "Afilmory preview"
+    }
+  },
+  "CreateSpaceCTA": {
+    "eyebrow": "Start Your Journey",
+    "title": "Create your visual space",
+    "descriptionLines": [
+      "Inside Afilmory, everyone can host a personal photography archive.",
+      "Capture light, organize memories, and share stories in your own cadence."
+    ],
+    "button": "Create my space",
+    "features": [
+      {
+        "icon": "📸",
+        "title": "Dedicated storage",
+        "description": "Keep your originals secure and neatly catalogued."
+      },
+      {
+        "icon": "🎨",
+        "title": "Curated storytelling",
+        "description": "Sequence projects like a curator and control every beat."
+      },
+      {
+        "icon": "🌐",
+        "title": "Effortless sharing",
+        "description": "Generate elegant public pages with a single link."
+      }
+    ]
+  },
+  "CreateSpaceModal": {
+    "eyebrow": "Create Your Space",
+    "title": "Name your private archive",
+    "descriptionLines": [
+      "Choose a memorable slug for your space,",
+      "it becomes the unique URL visitors will use."
+    ],
+    "fieldLabel": "Space name",
+    "fieldPlaceholder": "e.g. myspace",
+    "domainSuffix": ".afilmory.art",
+    "tipsTitle": "💡 Tips",
+    "tips": [
+      "Use letters, numbers, or hyphens only",
+      "Pick at least 3 characters for clarity",
+      "Names cannot be changed after creation"
+    ],
+    "buttons": {
+      "primaryIdle": "Create my space",
+      "primaryPending": "Checking...",
+      "secondary": "Maybe later"
+    },
+    "closeLabel": "Close",
+    "validations": {
+      "required": "Enter the name you'd like to reserve",
+      "minLength": "The name must be at least 3 characters"
+    },
+    "errors": {
+      "generic": "We couldn't verify that name, please try again.",
+      "missingRedirect": "Verification succeeded but no redirect was provided. Try again in a moment.",
+      "network": "Network error, please retry shortly."
+    }
+  },
+  "Pillars": {
+    "eyebrow": "Name Origin",
+    "title": "The four senses behind Afilmory",
+    "description": "Auto Focus, Aperture, Film, Memory - these four words name the system and guide every visitor entering the archive.",
+    "items": [
+      {
+        "label": "Auto Focus",
+        "title": "Focus",
+        "description": "Sharp focusing locks onto a single breath in the dark, like a pinpoint of light resting on your fingertips - poetry from the first moments."
+      },
+      {
+        "label": "Aperture",
+        "title": "Aperture",
+        "description": "Aperture opens gently inside the blackout, shaping brightness while carving emotion so every shadow lands somewhere tangible."
+      },
+      {
+        "label": "Film",
+        "title": "Film",
+        "description": "Grain and trailing light weave tactile texture. The slowness and calm of film stay intact here without rushing to reveal."
+      },
+      {
+        "label": "Memory",
+        "title": "Memory",
+        "description": "Each shutter is a migration of memory, turning unnamed feelings into chapters that can be reread."
+      }
+    ]
+  },
+  "Journey": {
+    "eyebrow": "Curated Path",
+    "title": "A three-stage journey through the dark corridor",
+    "description": "No technical specs required - only light, breathing, and tempo. Each segment mirrors a viewing experience: gathering light, immersion, then presentation.",
+    "steps": [
+      {
+        "title": "Gathering Light",
+        "description": "Walk between city and wilderness, capturing humid particles of light while listening to the hush before the shutter."
+      },
+      {
+        "title": "Immersion",
+        "description": "Arrange work in a darkroom-like interface, pacing it like a gallery wall and muting every excess sound."
+      },
+      {
+        "title": "Presentation",
+        "description": "Share as a curator so visitors drift along a black corridor and step toward the heart of each story."
+      }
+    ]
+  },
+  "GalleryPreview": {
+    "eyebrow": "Gallery Preview",
+    "title": "Immersive wall of works (placeholder imagery)",
+    "description": "Before launch, placeholder tiles illustrate the future structure. A sideways scroll echoes a physical hall so light can unfold quietly.",
+    "placeholder": {
+      "title": "Work placeholder",
+      "label": "Placeholder"
+    },
+    "items": [
+      {
+        "title": "Misty Morning Glow",
+        "caption": "Riverside light and low clouds spread over a mirrored surface, wrapping the frame in breath."
+      },
+      {
+        "title": "Stage Afterglow",
+        "caption": "Heat lingers after stage lights die; faces and silhouettes braid into memory."
+      },
+      {
+        "title": "Rainy Night Streets",
+        "caption": "Wet streets mirror neon while grain and contrast combine into a nocturnal score."
+      }
+    ]
+  },
+  "ArtistNote": {
+    "eyebrow": "Artist Statement",
+    "title": "A photographer's declaration",
+    "description": "\"I believe imagery is a slow language. Afilmory lets me collage memories inside a dark interface; controlling aperture is controlling tempo, and the grain of film reminds me to embrace imperfection. Every curation is self-reflection and an invitation for more people to enter the story.\"",
+    "divider": "————",
+    "signatureTitle": "Signature",
+    "signatureDescription": "Rendered as a handwritten imprint",
+    "hintsLabel": "Darkroom hints",
+    "hintsBody": "Imagine yourself in a darkroom lit only by a red safe light. You soak each work like film in chemicals, gently rocking it until an image surfaces. Afilmory's interface carries that slower, light-listening posture onto the screen.",
+    "memoryNote": "Darkroom memory placeholder: this area will show real footage later. Abstract textures stand in for now."
+  },
+  "ClosingCTA": {
+    "eyebrow": "Final Call",
+    "title": "Let images breathe before the world listens",
+    "description": "When you're ready to enter this nightbound gallery, Afilmory quietly accompanies you while you arrange the work - no settings, only memories revealed by light.",
+    "primaryButton": "Reserve entry",
+    "secondaryButton": "Request a private tour"
+  },
+  "Footer": {
+    "eyebrow": "Afilmory Studio",
+    "title": "Let aperture, film, and memory breathe together",
+    "description": "Afilmory crafts immersive showcases for photographers, curators, and brands. A dark corridor replaces noise so stories can be heard.",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "copyright": "© 2025 Afilmory.art"
+  }
+}

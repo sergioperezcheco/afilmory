@@ -1,71 +1,14 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { CreateSpaceModal } from './CreateSpaceModal'
 import { NocturneButton } from './NocturneButton'
 
-const pillars = [
-  {
-    en: 'Auto Focus',
-    title: '聚焦',
-    description:
-      '敏锐的对焦在暗夜中锁定一束呼吸，像指尖稳稳托起的光点，开场即是诗意。',
-  },
-  {
-    en: 'Aperture',
-    title: '光圈',
-    description:
-      '光圈在黑幕里微微开启，控制亮度的同时也雕刻情绪，让每一道阴影有落脚处。',
-  },
-  {
-    en: 'Film',
-    title: '胶片',
-    description:
-      '颗粒与拖影构成质感的肌理，胶片的慢和沉静在这里被完整保留，不急于呈现。',
-  },
-  {
-    en: 'Memory',
-    title: '记忆',
-    description:
-      '每一次快门都是一场记忆迁徙，图像收拢那些无法命名的情绪，转化为可反复阅读的篇章。',
-  },
-]
-
-const journey = [
-  {
-    title: '拾光',
-    description:
-      '走进城市与旷野之间，捕捉湿润空气中的光粒，倾听快门前那一瞬的安静。',
-  },
-  {
-    title: '沉浸',
-    description:
-      '在暗室般的界面里整理作品，像排布展墙一样思考节奏，删减一切多余的声响。',
-  },
-  {
-    title: '呈现',
-    description:
-      '以策展人的姿态分享影像，让观看者沿着黑色走廊，一步步靠近故事的核心。 ',
-  },
-]
-
-const previewItems = [
-  {
-    title: '薄雾晨光',
-    caption: '沿河的微光与低云在镜面上映开，气息缠绕在影像周围。',
-  },
-  {
-    title: '舞台余温',
-    caption: '舞台灯熄灭后的余温仍在，面庞与背影交错成记忆。',
-  },
-  {
-    title: '雨夜街景',
-    caption: '潮湿的街道倒映霓虹，颗粒与反差交织成一幅暗色乐章。',
-  },
-]
-
 export const NocturneHero = () => {
+  const t = useTranslations('Hero')
+
   return (
     <section className="relative overflow-hidden rounded-[40px] border border-white/5 bg-linear-to-b from-[#050505] via-[#030303] to-black px-6 py-12 shadow-[0_30px_120px_rgba(0,0,0,0.6)] sm:px-10 sm:py-16">
       <div className="pointer-events-none absolute inset-0 opacity-60">
@@ -74,17 +17,17 @@ export const NocturneHero = () => {
       </div>
       <div className="relative flex flex-col gap-12">
         <nav className="flex items-center justify-between text-[0.65rem] tracking-[0.5em] text-white/50 uppercase">
-          <span>Afilmory</span>
-          <span>暗夜影像档案</span>
+          <span>{t('nav.brand')}</span>
+          <span>{t('nav.tagline')}</span>
         </nav>
         <div className="space-y-8 text-center">
           <p className="text-sm tracking-[0.4em] text-white/50 uppercase">
-            Auto Focus · Aperture · Film · Memory
+            {t('subheading')}
           </p>
           <h1 className="font-serif text-4xl leading-tight text-white sm:text-5xl lg:text-[4.25rem]">
-            Afilmory：
+            {t('titleLine1')}
             <br />
-            在黑暗中把焦点与记忆熔铸为一
+            {t('titleLine2')}
           </h1>
           <div className="flex justify-center pt-4">
             <NocturneButton
@@ -94,7 +37,7 @@ export const NocturneHero = () => {
                   ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
               }}
             >
-              走进影像档案馆
+              {t('button')}
             </NocturneButton>
           </div>
         </div>
@@ -102,7 +45,7 @@ export const NocturneHero = () => {
           <div className="mt-4 aspect-4/3 w-full overflow-hidden rounded-2xl border border-white/10">
             <img
               src="https://github.com/Afilmory/assets/blob/main/afilmory-readme.webp?raw=true"
-              alt="Afilmory Preview"
+              alt={t('preview.imageAlt')}
               className="h-full w-full object-cover"
             />
           </div>
@@ -110,15 +53,12 @@ export const NocturneHero = () => {
           <div className="flex flex-col justify-between rounded-[28px] border border-white/10 bg-white/5 p-6">
             <div>
               <p className="text-xs tracking-[0.4em] text-white/40 uppercase">
-                Artist Note
+                {t('artistNoteLabel')}
               </p>
-              <p className="mt-4 text-lg text-white">
-                「我把日常碎片带进 Afilmory，像在暗房里排布展线。它让我得以用
-                光而非语言叙述故事。」
-              </p>
+              <p className="mt-4 text-lg text-white">{t('artistNote')}</p>
             </div>
             <div className="mt-6 text-right text-sm text-white/60">
-              —— 影像策展人
+              {t('artistSignature')}
             </div>
           </div>
         </div>
@@ -128,7 +68,14 @@ export const NocturneHero = () => {
 }
 
 export const CreateSpaceCTA = () => {
+  const t = useTranslations('CreateSpaceCTA')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const descriptionLines = t.raw('descriptionLines') as string[]
+  const features = t.raw('features') as Array<{
+    icon: string
+    title: string
+    description: string
+  }>
 
   return (
     <>
@@ -141,49 +88,39 @@ export const CreateSpaceCTA = () => {
         </div>
         <div className="relative mx-auto max-w-3xl text-center">
           <p className="text-xs tracking-[0.6em] text-white/40 uppercase">
-            Start Your Journey
+            {t('eyebrow')}
           </p>
           <h2 className="mt-6 font-serif text-3xl leading-tight text-white sm:text-4xl lg:text-5xl">
-            创建你的影像空间
+            {t('title')}
           </h2>
           <p className="mt-6 text-base leading-relaxed text-white/70 sm:text-lg">
-            在 Afilmory 中，每个人都可以拥有属于自己的摄影档案馆。
-            <br className="hidden sm:inline" />
-            记录光影、整理回忆、分享故事——用你的方式呈现独特的视觉叙事。
+            {descriptionLines.map((line, index) => (
+              <span key={line}>
+                {line}
+                {index === 0 && <br className="hidden sm:inline" />}
+              </span>
+            ))}
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
             <NocturneButton onClick={() => setIsModalOpen(true)}>
-              创建我的空间
+              {t('button')}
             </NocturneButton>
           </div>
           <div className="mt-12 grid gap-4 text-left sm:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <div className="mb-3 text-2xl">📸</div>
-              <h3 className="mb-2 text-sm font-medium tracking-wider text-white">
-                专属存储
-              </h3>
-              <p className="text-xs leading-relaxed text-white/60">
-                安全存储你的照片作品，构建专属的影像档案
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <div className="mb-3 text-2xl">🎨</div>
-              <h3 className="mb-2 text-sm font-medium tracking-wider text-white">
-                自由策展
-              </h3>
-              <p className="text-xs leading-relaxed text-white/60">
-                像策展人一样组织作品，打造独特的视觉体验
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <div className="mb-3 text-2xl">🌐</div>
-              <h3 className="mb-2 text-sm font-medium tracking-wider text-white">
-                轻松分享
-              </h3>
-              <p className="text-xs leading-relaxed text-white/60">
-                一键生成精美展示页，与世界分享你的故事
-              </p>
-            </div>
+            {features.map((feature) => (
+              <div
+                key={feature.title}
+                className="rounded-2xl border border-white/10 bg-white/5 p-6"
+              >
+                <div className="mb-3 text-2xl">{feature.icon}</div>
+                <h3 className="mb-2 text-sm font-medium tracking-wider text-white">
+                  {feature.title}
+                </h3>
+                <p className="text-xs leading-relaxed text-white/60">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -197,28 +134,30 @@ export const CreateSpaceCTA = () => {
 }
 
 export const PillarsSection = () => {
+  const t = useTranslations('Pillars')
+  const items = t.raw('items') as Array<{
+    label: string
+    title: string
+    description: string
+  }>
+
   return (
     <section id="chapters" className="space-y-10">
       <div className="text-center">
         <p className="text-xs tracking-[0.6em] text-white/40 uppercase">
-          Name Origin
+          {t('eyebrow')}
         </p>
-        <h2 className="mt-4 font-serif text-3xl text-white">
-          Afilmory 的四个核心感官
-        </h2>
-        <p className="mt-3 text-base text-white/70">
-          Auto Focus, Aperture, Film, Memory ——
-          四个词汇构成名字，也构成观看者进入影像档案的仪式。
-        </p>
+        <h2 className="mt-4 font-serif text-3xl text-white">{t('title')}</h2>
+        <p className="mt-3 text-base text-white/70">{t('description')}</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
-        {pillars.map((pillar) => (
+        {items.map((pillar) => (
           <div
-            key={pillar.en}
-            className="group relative overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-white/[0.08] to-transparent p-6 transition hover:border-white/30"
+            key={pillar.label}
+            className="group relative overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-white/8 to-transparent p-6 transition hover:border-white/30"
           >
             <div className="text-[0.65rem] tracking-[0.4em] text-white/40 uppercase">
-              {pillar.en}
+              {pillar.label}
             </div>
             <h3 className="mt-4 font-serif text-2xl text-white">
               {pillar.title}
@@ -235,6 +174,9 @@ export const PillarsSection = () => {
 }
 
 export const JourneySection = () => {
+  const t = useTranslations('Journey')
+  const steps = t.raw('steps') as Array<{ title: string; description: string }>
+
   return (
     <section
       id="journey"
@@ -243,18 +185,14 @@ export const JourneySection = () => {
       <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-xs tracking-[0.5em] text-white/40 uppercase">
-            Curated Path
+            {t('eyebrow')}
           </p>
-          <h2 className="mt-4 font-serif text-3xl text-white">
-            在黑色走廊里的三阶段旅程
-          </h2>
+          <h2 className="mt-4 font-serif text-3xl text-white">{t('title')}</h2>
         </div>
-        <p className="max-w-xl text-sm text-white/70">
-          不需要携带任何技术说明，只在乎光线、呼吸与节奏。每段旅程都对应着一次观看体验，从拾光到沉浸再到呈现。
-        </p>
+        <p className="max-w-xl text-sm text-white/70">{t('description')}</p>
       </div>
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
-        {journey.map((step, index) => (
+        {steps.map((step, index) => (
           <div
             key={step.title}
             className="rounded-3xl border border-white/10 bg-white/5 p-6"
@@ -275,30 +213,30 @@ export const JourneySection = () => {
 }
 
 export const GalleryPreview = () => {
+  const t = useTranslations('GalleryPreview')
+  const items = t.raw('items') as Array<{ title: string; caption: string }>
+  const placeholder = t.raw('placeholder') as { title: string; label: string }
+
   return (
     <section id="preview" className="space-y-6">
       <div className="flex flex-col gap-3 text-left">
         <p className="text-xs tracking-[0.5em] text-white/40 uppercase">
-          Gallery Preview
+          {t('eyebrow')}
         </p>
-        <h2 className="font-serif text-3xl text-white">
-          沉浸式作品墙（使用占位图）
-        </h2>
-        <p className="max-w-2xl text-sm text-white/60">
-          在正式上线前，这里以占位图展示未来的画面结构。横向滚动的布局模拟实体展厅的节奏，让光影以静默方式展开。
-        </p>
+        <h2 className="font-serif text-3xl text-white">{t('title')}</h2>
+        <p className="max-w-2xl text-sm text-white/60">{t('description')}</p>
       </div>
       <div className="flex gap-4 overflow-x-auto pb-2">
-        {previewItems.map((item) => (
+        {items.map((item) => (
           <div
             key={item.title}
             className="min-w-[260px] flex-1 rounded-[30px] border border-white/10 bg-linear-to-br from-white/10 via-transparent to-black/30 p-5"
           >
-            <div className="aspect-[3/4] w-full rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),rgba(0,0,0,0.85))]">
+            <div className="aspect-3/4 w-full rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),rgba(0,0,0,0.85))]">
               <div className="flex h-full flex-col items-center justify-center text-center text-white/50">
-                <span className="text-sm">作品占位图</span>
+                <span className="text-sm">{placeholder.title}</span>
                 <span className="text-[0.65rem] tracking-[0.4em] uppercase">
-                  Placeholder
+                  {placeholder.label}
                 </span>
               </div>
             </div>
@@ -314,35 +252,35 @@ export const GalleryPreview = () => {
 }
 
 export const ArtistNote = () => {
+  const t = useTranslations('ArtistNote')
+
   return (
     <section className="grid gap-8 rounded-[36px] border border-white/10 bg-linear-to-br from-white/5 via-transparent to-black/50 p-8 lg:grid-cols-[1.1fr,0.9fr]">
       <div className="space-y-6">
         <p className="text-xs tracking-[0.4em] text-white/40 uppercase">
-          Artist Statement
+          {t('eyebrow')}
         </p>
-        <h2 className="font-serif text-3xl text-white">摄影师的宣言</h2>
+        <h2 className="font-serif text-3xl text-white">{t('title')}</h2>
         <p className="text-base leading-relaxed text-white/75">
-          「我相信图像是一种缓慢的语言。Afilmory
-          让我从容地在深色背景里拼贴回忆，控制光圈就是控制节奏，胶片的颗粒提醒我拥抱不完美。每一次策展都是一次自我对照，也是把更多人带进故事的方式。」
+          {t('description')}
         </p>
         <div className="pt-4 text-sm tracking-[0.4em] text-white/40 uppercase">
-          ————
+          {t('divider')}
         </div>
         <div>
-          <p className="text-lg text-white">签名 / Signature</p>
-          <p className="text-sm text-white/60">以手写笔触呈现的个人烙印</p>
+          <p className="text-lg text-white">{t('signatureTitle')}</p>
+          <p className="text-sm text-white/60">{t('signatureDescription')}</p>
         </div>
       </div>
       <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-black/40 p-6">
         <div className="text-xs tracking-[0.4em] text-white/40 uppercase">
-          Darkroom Hints
+          {t('hintsLabel')}
         </div>
         <p className="mt-4 text-base leading-loose text-white/70">
-          想象自己站在暗房里，只有红色安全灯。你将作品像底片一样浸泡在药水中，一次次轻晃，让影像慢慢显影。Afilmory
-          的界面和流程，便是把这种慢下来、仔细聆听光线的姿态搬到屏幕上。
+          {t('hintsBody')}
         </p>
         <div className="mt-6 rounded-2xl border border-white/15 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.16),rgba(0,0,0,0.9))] p-6 text-sm text-white/70">
-          暗室记忆占位：未来这里会展示实际的流程影像。当前用抽象纹理象征。
+          {t('memoryNote')}
         </div>
       </div>
     </section>
@@ -350,6 +288,8 @@ export const ArtistNote = () => {
 }
 
 export const ClosingCTA = () => {
+  const t = useTranslations('ClosingCTA')
+
   return (
     <section className="relative overflow-hidden rounded-[44px] border border-white/15 bg-linear-to-r from-black via-[#050505] to-black p-10 text-center">
       <div className="absolute inset-0 opacity-50">
@@ -358,24 +298,21 @@ export const ClosingCTA = () => {
       </div>
       <div className="relative space-y-6">
         <p className="text-xs tracking-[0.5em] text-white/50 uppercase">
-          Final Call
+          {t('eyebrow')}
         </p>
-        <h2 className="font-serif text-4xl text-white">
-          让影像先呼吸，再被世界听见
-        </h2>
+        <h2 className="font-serif text-4xl text-white">{t('title')}</h2>
         <p className="mx-auto max-w-2xl text-base text-white/70">
-          当你准备好进入这座暗夜中的影像馆，Afilmory
-          会以最安静的方式陪你陈列作品。这里没有参数，只有被光照亮的记忆。
+          {t('description')}
         </p>
         <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
           <NocturneButton className="text-base tracking-[0.3em]">
-            预约入场
+            {t('primaryButton')}
           </NocturneButton>
           <NocturneButton
             variant="secondary"
             className="text-base tracking-[0.3em]"
           >
-            请求私人导览
+            {t('secondaryButton')}
           </NocturneButton>
         </div>
       </div>

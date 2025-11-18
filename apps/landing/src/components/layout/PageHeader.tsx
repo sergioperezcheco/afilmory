@@ -1,10 +1,11 @@
 'use client'
 
 import { m, useMotionValueEvent, useScroll, useTransform } from 'motion/react'
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 
 import { NocturneButton } from '~/components/landing/NocturneButton'
+import { Link } from '~/i18n/routing'
 import { blur, radius, transition } from '~/lib/design-tokens'
 import { clsxm } from '~/lib/helper'
 
@@ -12,6 +13,7 @@ export const PageHeader = () => {
   const { scrollY } = useScroll()
   const [scrollPos, setScrollPos] = useState(0)
 
+  const t = useTranslations('Header')
   useMotionValueEvent(scrollY, 'change', (latest) => {
     setScrollPos(latest)
   })
@@ -87,7 +89,7 @@ export const PageHeader = () => {
           </m.div>
           <div className="hidden sm:block">
             <p className="font-serif text-base font-medium tracking-wide text-white">
-              Afilmory
+              {t('brand')}
             </p>
             <p
               className={clsxm(
@@ -95,7 +97,7 @@ export const PageHeader = () => {
                 scrolled ? 'text-white/60' : 'text-white/50',
               )}
             >
-              Film Archive
+              {t('tagline')}
             </p>
           </div>
         </Link>
@@ -106,7 +108,7 @@ export const PageHeader = () => {
             onClick={handleGetStarted}
             className="px-5 py-2 text-xs"
           >
-            开始使用
+            {t('cta')}
           </NocturneButton>
         </div>
       </m.div>

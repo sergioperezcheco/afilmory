@@ -1,0 +1,181 @@
+{
+  "Meta": {
+    "title": "Afilmory",
+    "description": "Afilmory 致力于为摄影师、策展人和品牌打造沉浸的展示体验。",
+    "keywords": "Afilmory, 照片画廊, 摄影, 展示"
+  },
+  "Header": {
+    "brand": "Afilmory",
+    "tagline": "Film Archive",
+    "cta": "开始使用"
+  },
+  "Hero": {
+    "nav": {
+      "brand": "Afilmory",
+      "tagline": "暗夜影像档案"
+    },
+    "subheading": "Auto Focus · Aperture · Film · Memory",
+    "titleLine1": "Afilmory：",
+    "titleLine2": "在黑暗中把焦点与记忆熔铸为一",
+    "button": "走进影像档案馆",
+    "artistNoteLabel": "Artist Note",
+    "artistNote": "「我把日常碎片带进 Afilmory，像在暗房里排布展线。它让我得以用光而非语言叙述故事。」",
+    "artistSignature": "—— 影像策展人",
+    "preview": {
+      "imageAlt": "Afilmory 预览"
+    }
+  },
+  "CreateSpaceCTA": {
+    "eyebrow": "Start Your Journey",
+    "title": "创建你的影像空间",
+    "descriptionLines": [
+      "在 Afilmory 中，每个人都可以拥有属于自己的摄影档案馆。",
+      "记录光影、整理回忆、分享故事——用你的方式呈现独特的视觉叙事。"
+    ],
+    "button": "创建我的空间",
+    "features": [
+      {
+        "icon": "📸",
+        "title": "专属存储",
+        "description": "安全存储你的照片作品，构建专属的影像档案"
+      },
+      {
+        "icon": "🎨",
+        "title": "自由策展",
+        "description": "像策展人一样组织作品，打造独特的视觉体验"
+      },
+      {
+        "icon": "🌐",
+        "title": "轻松分享",
+        "description": "一键生成精美展示页，与世界分享你的故事"
+      }
+    ]
+  },
+  "CreateSpaceModal": {
+    "eyebrow": "Create Your Space",
+    "title": "创建你的专属空间",
+    "descriptionLines": [
+      "为你的影像档案馆选择一个独一无二的名字，",
+      "这将成为你的专属网址。"
+    ],
+    "fieldLabel": "你的空间名称",
+    "fieldPlaceholder": "例如：myspace",
+    "domainSuffix": ".afilmory.art",
+    "tipsTitle": "💡 小提示",
+    "tips": [
+      "只能使用英文字母、数字和连字符 (-)",
+      "至少 3 个字符，建议简短易记",
+      "一旦创建，名称将不可更改"
+    ],
+    "buttons": {
+      "primaryIdle": "创建我的空间",
+      "primaryPending": "检查中...",
+      "secondary": "稍后再说"
+    },
+    "closeLabel": "关闭",
+    "validations": {
+      "required": "请输入你想要的空间名称",
+      "minLength": "空间名称至少需要 3 个字符"
+    },
+    "errors": {
+      "generic": "检查空间名称时发生未知错误，请稍后重试。",
+      "missingRedirect": "验证成功但缺少跳转地址，请稍后重试。",
+      "network": "网络异常，请稍后再试。"
+    }
+  },
+  "Pillars": {
+    "eyebrow": "命名由来",
+    "title": "Afilmory 的四个核心感官",
+    "description": "Auto Focus、Aperture、Film、Memory —— 四个词汇构成名字，也构成观看者进入影像档案的仪式。",
+    "items": [
+      {
+        "label": "Auto Focus",
+        "title": "聚焦",
+        "description": "敏锐的对焦在暗夜中锁定一束呼吸，像指尖稳稳托起的光点，开场即是诗意。"
+      },
+      {
+        "label": "Aperture",
+        "title": "光圈",
+        "description": "光圈在黑幕里微微开启，控制亮度的同时也雕刻情绪，让每一道阴影有落脚处。"
+      },
+      {
+        "label": "Film",
+        "title": "胶片",
+        "description": "颗粒与拖影构成质感的肌理，胶片的慢和沉静在这里被完整保留，不急于呈现。"
+      },
+      {
+        "label": "Memory",
+        "title": "记忆",
+        "description": "每一次快门都是一场记忆迁徙，图像收拢那些无法命名的情绪，转化为可反复阅读的篇章。"
+      }
+    ]
+  },
+  "Journey": {
+    "eyebrow": "策展路径",
+    "title": "在黑色走廊里的三阶段旅程",
+    "description": "不需要携带任何技术说明，只在乎光线、呼吸与节奏。每段旅程都对应着一次观看体验，从拾光到沉浸再到呈现。",
+    "steps": [
+      {
+        "title": "拾光",
+        "description": "走进城市与旷野之间，捕捉湿润空气中的光粒，倾听快门前那一瞬的安静。"
+      },
+      {
+        "title": "沉浸",
+        "description": "在暗室般的界面里整理作品，像排布展墙一样思考节奏，删减一切多余的声响。"
+      },
+      {
+        "title": "呈现",
+        "description": "以策展人的姿态分享影像，让观看者沿着黑色走廊，一步步靠近故事的核心。"
+      }
+    ]
+  },
+  "GalleryPreview": {
+    "eyebrow": "Gallery Preview",
+    "title": "沉浸式作品墙（使用占位图）",
+    "description": "在正式上线前，这里以占位图展示未来的画面结构。横向滚动的布局模拟实体展厅的节奏，让光影以静默方式展开。",
+    "placeholder": {
+      "title": "作品占位图",
+      "label": "Placeholder"
+    },
+    "items": [
+      {
+        "title": "薄雾晨光",
+        "caption": "沿河的微光与低云在镜面上映开，气息缠绕在影像周围。"
+      },
+      {
+        "title": "舞台余温",
+        "caption": "舞台灯熄灭后的余温仍在，面庞与背影交错成记忆。"
+      },
+      {
+        "title": "雨夜街景",
+        "caption": "潮湿的街道倒映霓虹，颗粒与反差交织成一幅暗色乐章。"
+      }
+    ]
+  },
+  "ArtistNote": {
+    "eyebrow": "艺术家声明",
+    "title": "摄影师的宣言",
+    "description": "「我相信图像是一种缓慢的语言。Afilmory 让我从容地在深色背景里拼贴回忆，控制光圈就是控制节奏，胶片的颗粒提醒我拥抱不完美。每一次策展都是一次自我对照，也是把更多人带进故事的方式。」",
+    "divider": "————",
+    "signatureTitle": "签名 / Signature",
+    "signatureDescription": "以手写笔触呈现的个人烙印",
+    "hintsLabel": "暗室提示",
+    "hintsBody": "想象自己站在暗房里，只有红色安全灯。你将作品像底片一样浸泡在药水中，一次次轻晃，让影像慢慢显影。Afilmory 的界面和流程，便是把这种慢下来、仔细聆听光线的姿态搬到屏幕上。",
+    "memoryNote": "暗室记忆占位：未来这里会展示实际的流程影像。当前用抽象纹理象征。"
+  },
+  "ClosingCTA": {
+    "eyebrow": "最终邀请",
+    "title": "让影像先呼吸，再被世界听见",
+    "description": "当你准备好进入这座暗夜中的影像馆，Afilmory 会以最安静的方式陪你陈列作品。这里没有参数，只有被光照亮的记忆。",
+    "primaryButton": "预约入场",
+    "secondaryButton": "请求私人导览"
+  },
+  "Footer": {
+    "eyebrow": "Afilmory Studio",
+    "title": "让光圈、胶片与记忆在一座暗夜馆中互相呼吸",
+    "description": "Afilmory 致力于为摄影师、策展人和品牌打造沉浸的展示体验。我们以黑色背景延展出一条长廊，观众在其中聆听故事，而非参数。",
+    "privacy": "隐私政策",
+    "terms": "服务条款",
+    "copyright": "© 2025 Afilmory.art"
+  }
+}

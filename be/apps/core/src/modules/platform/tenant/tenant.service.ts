@@ -143,6 +143,16 @@ export class TenantService {
     await this.repository.updateBanned(id, banned)
   }
 
+  async isSlugAvailable(slug: string): Promise<boolean> {
+    const normalized = this.normalizeSlug(slug)
+    if (!normalized) {
+      return false
+    }
+
+    const existing = await this.repository.findBySlug(normalized)
+    return existing === null
+  }
+
   private ensureTenantIsActive(tenant: TenantAggregate['tenant']): void {
     if (tenant.banned) {
       throw new BizException(ErrorCode.TENANT_BANNED)

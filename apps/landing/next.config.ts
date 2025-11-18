@@ -2,11 +2,13 @@ import NextBundleAnalyzer from '@next/bundle-analyzer'
 import codeInspector from 'code-inspector-plugin'
 import { config } from 'dotenv'
 import type { NextConfig } from 'next'
+import createNextIntlPlugin from 'next-intl/plugin'
 
 process.title = 'Hero (NextJS)'
 
 const env = config().parsed || {}
 const isProd = process.env.NODE_ENV === 'production'
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
 let nextConfig: NextConfig = {
   reactStrictMode: false,
@@ -61,4 +63,4 @@ if (process.env.ANALYZE === 'true') {
   })(nextConfig)
 }
 
-export default nextConfig
+export default withNextIntl(nextConfig)
