@@ -1,7 +1,7 @@
 ---
 title: Overview
 createdAt: 2025-07-20T22:35:03+08:00
-lastModified: 2025-11-15T01:31:13+08:00
+lastModified: 2025-11-20T23:41:32+08:00
 ---
 
 # Overview
@@ -127,6 +127,9 @@ This will automatically pull resources from the remote repository, avoiding rebu
 - `enableLivePhotoDetection`: Enable Live Photo detection
 - `digestSuffixLength`: Digest suffix length for deterministic IDs
 - `supportedFormats`: Optional allowlist of file extensions to process
+
+#### Geocoding (`user.geocoding`)
+
 - `enableGeocoding`: Enable reverse geocoding from GPS coordinates (default: `false`)
 - `geocodingProvider`: Geocoding service provider (`'mapbox'` | `'nominatim'` | `'auto'`, default: `'auto'`)
 - `mapboxToken`: Mapbox access token (required when using Mapbox provider)
@@ -145,19 +148,19 @@ This will automatically pull resources from the remote repository, avoiding rebu
 
 #### Geocoding Configuration Example
 
-To enable reverse geocoding, configure the geocoding provider in your `builder.config.ts`:
+To enable reverse geocoding, configure the geocoding provider under `user.geocoding` in your `builder.config.ts`:
 
 **Using Nominatim (Free, but rate-limited):**
 
 ```typescript
 {
-  system: {
-    processing: {
+  user: {
+    geocoding: {
       enableGeocoding: true,
       // Optional: use custom Nominatim instance
       // nominatimBaseUrl: 'https://your-nominatim-instance.com'
-    }
-  }
+    },
+  },
 }
 
 ```
@@ -166,12 +169,12 @@ To enable reverse geocoding, configure the geocoding provider in your `builder.c
 
 ```typescript
 {
-  system: {
-    processing: {
+  user: {
+    geocoding: {
       enableGeocoding: true,
-      mapboxToken: process.env.MAPBOX_TOKEN
-    }
-  }
+      mapboxToken: process.env.MAPBOX_TOKEN,
+    },
+  },
 }
 ```
 

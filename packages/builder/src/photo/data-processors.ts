@@ -9,14 +9,10 @@ import { extractExifData } from '../image/exif.js'
 import { calculateHistogramAndAnalyzeTone } from '../image/histogram.js'
 import { generateThumbnailAndBlurhash, thumbnailExists } from '../image/thumbnail.js'
 import { workdir } from '../path.js'
-import type { LocationInfo,PhotoManifestItem, PickedExif, ToneAnalysis } from '../types/photo.js'
+import type { LocationInfo, PhotoManifestItem, PickedExif, ToneAnalysis } from '../types/photo.js'
 import { getPhotoExecutionContext } from './execution-context.js'
-import type {GeocodingProvider} from './geocoding.js';
-import {
-  createGeocodingProvider,
-  extractLocationFromGPS,
-  parseGPSCoordinates
-} from './geocoding.js'
+import type { GeocodingProvider } from './geocoding.js'
+import { createGeocodingProvider, extractLocationFromGPS, parseGPSCoordinates } from './geocoding.js'
 import { getGlobalLoggers } from './logger-adapter.js'
 import type { PhotoProcessorOptions } from './processor.js'
 
@@ -154,10 +150,13 @@ export async function processLocationData(
     // 获取配置
     const context = getPhotoExecutionContext()
     const config = context.builder.getConfig()
-    const processingSettings = config.system.processing
+    const geocodingSettings = config.user?.geocoding ?? {
+      enableGeocoding: false,
+      geocodingProvider: 'auto',
+    }
 
     // 检查是否启用地理编码
-    if (!processingSettings.enableGeocoding) {
+    if (!geocodingSettings.enableGeocoding) {
       return null
     }
 
@@ -192,14 +191,14 @@ export async function processLocationData(
     }
 
     // 创建或复用地理编码提供者
-    const providerType = processingSettings.geocodingProvider || 'auto'
-    const providerConfigKey = `${providerType}:${processingSettings.mapboxToken || ''}:${processingSettings.nominatimBaseUrl || ''}`
+    const providerType = geocodingSettings.geocodingProvider || 'auto'
+    const providerConfigKey = `${providerType}:${geocodingSettings.mapboxToken || ''}:${geocodingSettings.nominatimBaseUrl || ''}`
 
     if (!cachedProvider || lastProviderConfig !== providerConfigKey) {
       cachedProvider = createGeocodingProvider(
         providerType,
-        processingSettings.mapboxToken,
-        processingSettings.nominatimBaseUrl,
+        geocodingSettings.mapboxToken,
+        geocodingSettings.nominatimBaseUrl,
       )
       lastProviderConfig = providerConfigKey
     }

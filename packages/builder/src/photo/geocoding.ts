@@ -1,5 +1,5 @@
-import fs from 'node:fs/promises'
 import { createHash } from 'node:crypto'
+import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -20,7 +20,7 @@ let rateLimitDirReady: Promise<void> | null = null
 
 const ensureRateLimitDir = async (): Promise<void> => {
   if (!rateLimitDirReady) {
-    rateLimitDirReady = fs.mkdir(INTERPROCESS_RATE_LIMIT_DIR, { recursive: true }).then(() => { })
+    rateLimitDirReady = fs.mkdir(INTERPROCESS_RATE_LIMIT_DIR, { recursive: true }).then(() => {})
   }
   await rateLimitDirReady
 }
@@ -36,7 +36,7 @@ const getRateLimitPaths = (key: string): { lockPath: string; timestampPath: stri
 }
 
 async function tryRemoveLock(lockPath: string): Promise<void> {
-  await fs.rm(lockPath, { force: true }).catch(() => { })
+  await fs.rm(lockPath, { force: true }).catch(() => {})
 }
 
 const isLockStale = async (lockPath: string): Promise<boolean> => {
@@ -110,7 +110,7 @@ class SequentialRateLimiter {
   private queue: Promise<void> = Promise.resolve()
   private lastTimestamp = 0
 
-  constructor(private readonly intervalMs: number) { }
+  constructor(private readonly intervalMs: number) {}
 
   wait(): Promise<void> {
     this.queue = this.queue.then(async () => {
@@ -246,10 +246,7 @@ export class MapboxGeocodingProvider implements GeocodingProvider {
         }
 
         const delay = getBackoffDelay(attempt, this.retryBaseDelayMs)
-        log.warn(
-          `Mapbox API 调用失败，${Math.round(delay)}ms 后重试 (${attempt}/${this.maxRetries})`,
-          error,
-        )
+        log.warn(`Mapbox API 调用失败，${Math.round(delay)}ms 后重试 (${attempt}/${this.maxRetries})`, error)
         await sleep(delay)
       }
     }
@@ -356,10 +353,7 @@ export class NominatimGeocodingProvider implements GeocodingProvider {
         }
 
         const delay = getBackoffDelay(attempt, this.retryBaseDelayMs)
-        log.warn(
-          `Nominatim API 调用失败，${Math.round(delay)}ms 后重试 (${attempt}/${this.maxRetries})`,
-          error,
-        )
+        log.warn(`Nominatim API 调用失败，${Math.round(delay)}ms 后重试 (${attempt}/${this.maxRetries})`, error)
         await sleep(delay)
       }
     }

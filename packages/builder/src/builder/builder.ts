@@ -689,15 +689,15 @@ export class AfilmoryBuilder {
   }
 
   private async retryMissingLocations(manifest: PhotoManifestItem[]): Promise<{ attempted: number; updated: number }> {
-    const processingSettings = this.config.system.processing
-    if (!processingSettings.enableGeocoding) {
+    const geocodingSettings = this.getUserSettings().geocoding
+    if (!geocodingSettings.enableGeocoding) {
       return { attempted: 0, updated: 0 }
     }
 
     const provider = createGeocodingProvider(
-      processingSettings.geocodingProvider || 'auto',
-      processingSettings.mapboxToken,
-      processingSettings.nominatimBaseUrl,
+      geocodingSettings.geocodingProvider || 'auto',
+      geocodingSettings.mapboxToken,
+      geocodingSettings.nominatimBaseUrl,
     )
 
     if (!provider) {

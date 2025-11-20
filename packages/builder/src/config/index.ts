@@ -28,19 +28,6 @@ function applySystemOverrides(target: BuilderConfig['system'], overrides?: Build
     if (processing.supportedFormats) {
       target.processing.supportedFormats = new Set(processing.supportedFormats as Set<string>)
     }
-    // 地理编码配置
-    if (typeof processing.enableGeocoding === 'boolean') {
-      target.processing.enableGeocoding = processing.enableGeocoding
-    }
-    if (processing.geocodingProvider) {
-      target.processing.geocodingProvider = processing.geocodingProvider
-    }
-    if (processing.mapboxToken !== undefined) {
-      target.processing.mapboxToken = processing.mapboxToken
-    }
-    if (processing.nominatimBaseUrl !== undefined) {
-      target.processing.nominatimBaseUrl = processing.nominatimBaseUrl
-    }
   }
 
   if (overrides.observability) {
@@ -70,8 +57,21 @@ function ensureUserSettings(target: BuilderConfig): UserBuilderSettings {
   if (!target.user) {
     target.user = {
       storage: null,
+      geocoding: {
+        enableGeocoding: false,
+        geocodingProvider: 'auto',
+      },
     }
   }
+
+  // 兼容旧的配置对象缺少 geocoding 字段的情况
+  if (!target.user.geocoding) {
+    target.user.geocoding = {
+      enableGeocoding: false,
+      geocodingProvider: 'auto',
+    }
+  }
+
   return target.user
 }
 
@@ -81,6 +81,13 @@ function applyUserOverrides(target: BuilderConfig, overrides?: BuilderConfigInpu
 
   if (overrides.storage !== undefined) {
     user.storage = overrides.storage as StorageConfig | null
+  }
+
+  if (overrides.geocoding) {
+    user.geocoding = {
+      ...user.geocoding,
+      ...overrides.geocoding,
+    }
   }
 }
 
