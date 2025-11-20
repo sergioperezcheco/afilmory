@@ -351,7 +351,7 @@ const enUiSchema = {
     providers: {
       types: {
         s3: 'AWS S3 Compatible Object Storage',
-        github: 'GitHub repository',
+        github: 'GitHub Repository',
         b2: 'Backblaze B2 cloud storage',
       },
       fields: {

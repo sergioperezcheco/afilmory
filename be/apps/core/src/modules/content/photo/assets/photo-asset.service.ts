@@ -12,7 +12,6 @@ import { CURRENT_PHOTO_MANIFEST_VERSION, DATABASE_ONLY_PROVIDER, photoAssets } f
 import { EventEmitterService } from '@afilmory/framework'
 import { DbAccessor } from 'core/database/database.provider'
 import { BizException, ErrorCode } from 'core/errors'
-import { runWithBuilderLogRelay } from 'core/modules/infrastructure/data-sync/builder-log-relay'
 import type {
   DataSyncAction,
   DataSyncLogLevel,
@@ -25,6 +24,8 @@ import { BILLING_USAGE_EVENT } from 'core/modules/platform/billing/billing.const
 import { BillingPlanService } from 'core/modules/platform/billing/billing-plan.service'
 import { BillingUsageService } from 'core/modules/platform/billing/billing-usage.service'
 import { requireTenantContext } from 'core/modules/platform/tenant/tenant.context'
+import { BuilderWorkerHost } from 'core/workers/builder/builder-worker.host'
+import type { BuilderWorkerLogEvent } from 'core/workers/builder/builder-worker.types'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { injectable } from 'tsyringe'
 
@@ -75,6 +76,7 @@ export class PhotoAssetService {
     private readonly photoStorageService: PhotoStorageService,
     private readonly billingPlanService: BillingPlanService,
     private readonly billingUsageService: BillingUsageService,
+    private readonly builderWorkerHost: BuilderWorkerHost,
   ) {}
 
   private async emitManifestChanged(tenantId: string): Promise<void> {
@@ -449,7 +451,6 @@ export class PhotoAssetService {
       const processedItems = await this.processPendingPhotos({
         pendingPhotoPlans: allPendingPhotoPlans,
         videoObjectsByBaseName,
-        builder,
         builderConfig,
         storageManager,
         storageConfig,
@@ -865,7 +866,6 @@ export class PhotoAssetService {
   private async processPendingPhotos(params: {
     pendingPhotoPlans: PreparedUploadPlan[]
     videoObjectsByBaseName: Map<string, StorageObject>
-    builder: ReturnType<PhotoBuilderService['createBuilder']>
     builderConfig: BuilderConfig
     storageManager: StorageManager
     storageConfig: StorageConfig
@@ -884,7 +884,6 @@ export class PhotoAssetService {
     const {
       pendingPhotoPlans,
       videoObjectsByBaseName,
-      builder,
       builderConfig,
       storageManager,
       storageConfig,
@@ -941,19 +940,21 @@ export class PhotoAssetService {
         }
       }
 
-      const processed = await runWithBuilderLogRelay(builderLogEmitter, () =>
-        this.photoBuilderService.processPhotoFromStorageObject(storageObject, {
-          builder,
-          builderConfig,
-          processorOptions: {
-            isForceMode: true,
-            isForceManifest: true,
-            isForceThumbnails: true,
-          },
-          livePhotoMap,
-          prefetchedBuffers,
-        }),
-      )
+      const processed = await this.builderWorkerHost.processPhoto({
+        builderConfig,
+        storageConfig,
+        storageObject,
+        livePhotoMap,
+        prefetchedBuffers,
+        processorOptions: {
+          isForceMode: true,
+          isForceManifest: true,
+          isForceThumbnails: true,
+        },
+        logHandler: builderLogEmitter
+          ? (event) => this.forwardUploadBuilderLog(builderLogEmitter, event, storageObject.key ?? resolvedPhotoKey)
+          : undefined,
+      })
 
       const item = processed?.item
       if (!item) {
@@ -1048,6 +1049,32 @@ export class PhotoAssetService {
     }
 
     return results
+  }
+
+  private forwardUploadBuilderLog(
+    emitter: DataSyncProgressEmitter | undefined,
+    event: BuilderWorkerLogEvent,
+    storageKey: string,
+  ): void {
+    if (!emitter) {
+      return
+    }
+
+    void emitter({
+      type: 'log',
+      payload: {
+        level: event.level,
+        message: event.message,
+        stage: 'missing-in-db',
+        storageKey,
+        details: {
+          ...(event.details ?? {}),
+          tag: event.tag ?? undefined,
+          source: event.details?.source ?? 'builder',
+        },
+        timestamp: event.timestamp,
+      },
+    })
   }
 
   async generatePublicUrl(storageKey: string): Promise<string> {

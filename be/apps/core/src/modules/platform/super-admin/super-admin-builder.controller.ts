@@ -13,9 +13,10 @@ import { BizException, ErrorCode } from 'core/errors'
 import { Roles } from 'core/guards/roles.decorator'
 import { BypassResponseTransform } from 'core/interceptors/response-transform.decorator'
 import { PhotoBuilderService } from 'core/modules/content/photo/builder/photo-builder.service'
-import { runWithBuilderLogRelay } from 'core/modules/infrastructure/data-sync/builder-log-relay'
 import type { DataSyncProgressEmitter } from 'core/modules/infrastructure/data-sync/data-sync.types'
 import { createProgressSseResponse } from 'core/modules/shared/http/sse'
+import { BuilderWorkerHost } from 'core/workers/builder/builder-worker.host'
+import type { BuilderWorkerProviderSnapshotInput } from 'core/workers/builder/builder-worker.host'
 import type { Context } from 'hono'
 
 import type { BuilderDebugProgressEvent, StorageResolution, UploadedDebugFile } from './InMemoryDebugStorageProvider'
@@ -29,7 +30,10 @@ const DEBUG_STORAGE_PROVIDER = 'super-admin-debug-storage'
 export class SuperAdminBuilderDebugController {
   private readonly logger = createLogger('SuperAdminBuilderDebugController')
 
-  constructor(private readonly photoBuilderService: PhotoBuilderService) {}
+  constructor(
+    private readonly photoBuilderService: PhotoBuilderService,
+    private readonly builderWorkerHost: BuilderWorkerHost,
+  ) {}
 
   @Post('debug')
   @BypassResponseTransform()
@@ -98,7 +102,8 @@ export class SuperAdminBuilderDebugController {
     builderConfig.user.storage = storageConfig
 
     const builder = this.photoBuilderService.createBuilder(builderConfig)
-    builder.registerStorageProvider(DEBUG_STORAGE_PROVIDER, () => new InMemoryDebugStorageProvider(), {
+    const storageProvider = new InMemoryDebugStorageProvider()
+    builder.registerStorageProvider(DEBUG_STORAGE_PROVIDER, () => storageProvider, {
       category: 'local',
     })
     this.photoBuilderService.applyStorageConfig(builder, storageConfig)
@@ -108,6 +113,7 @@ export class SuperAdminBuilderDebugController {
       builderConfig,
       storageConfig,
       storageManager: builder.getStorageManager(),
+      storageProvider,
     }
   }
 
@@ -118,7 +124,7 @@ export class SuperAdminBuilderDebugController {
       logEmitter: DataSyncProgressEmitter
     },
   ) {
-    const { builder, builderConfig, storageManager, file, sendEvent, logEmitter } = params
+    const { builder, builderConfig, storageManager, storageConfig, storageProvider, file, sendEvent, logEmitter } = params
     const cleanupKeys = new Set<string>()
 
     const tempKey = this.createTemporaryStorageKey(file.name)
@@ -138,20 +144,37 @@ export class SuperAdminBuilderDebugController {
       },
     })
 
-    let processed: Awaited<ReturnType<typeof this.photoBuilderService.processPhotoFromStorageObject>> | null = null
+    let processed: Awaited<ReturnType<BuilderWorkerHost['processPhoto']>> | null = null
     let filesDeleted = false
     try {
-      processed = await runWithBuilderLogRelay(logEmitter, () =>
-        this.photoBuilderService.processPhotoFromStorageObject(normalizedObject, {
-          builder,
-          builderConfig,
-          processorOptions: {
-            isForceMode: true,
-            isForceManifest: true,
-            isForceThumbnails: true,
-          },
-        }),
-      )
+      const providerSnapshot = this.createDebugProviderSnapshot(storageConfig.provider, storageProvider)
+      processed = await this.builderWorkerHost.processPhoto({
+        builderConfig,
+        storageConfig,
+        storageObject: normalizedObject,
+        processorOptions: {
+          isForceMode: true,
+          isForceManifest: true,
+          isForceThumbnails: true,
+        },
+        logHandler: (event) => {
+          void logEmitter({
+            type: 'log',
+            payload: {
+              level: event.level,
+              message: event.message,
+              stage: null,
+              storageKey: normalizedObject.key,
+              details: {
+                ...(event.details ?? {}),
+                tag: event.tag ?? undefined,
+              },
+              timestamp: event.timestamp,
+            },
+          })
+        },
+        providerSnapshots: [providerSnapshot],
+      })
 
       const thumbnailKey = this.resolveThumbnailStorageKey(processed?.pluginData)
       if (thumbnailKey) {
@@ -231,6 +254,22 @@ export class SuperAdminBuilderDebugController {
       safeSegments.push(trimmed)
     }
     return safeSegments.join('/')
+  }
+
+  private createDebugProviderSnapshot(
+    provider: string,
+    storageProvider: InMemoryDebugStorageProvider,
+  ): BuilderWorkerProviderSnapshotInput {
+    const files = storageProvider.exportSnapshot()
+    return {
+      type: 'in-memory-debug',
+      provider,
+      files: files.map((file) => ({
+        key: file.key,
+        metadata: file.metadata,
+        buffer: file.buffer,
+      })),
+    }
   }
 
   private async cleanupDebugArtifacts(storageManager: StorageManager, keys: Set<string>): Promise<boolean> {

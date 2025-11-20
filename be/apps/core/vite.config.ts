@@ -8,6 +8,7 @@ import { promisify } from 'node:util'
 import swc from 'unplugin-swc'
 import { defineConfig } from 'vite'
 import { analyzer } from 'vite-bundle-analyzer'
+import workerPlugin from 'vite-plugin-node-worker'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 const NODE_BUILT_IN_MODULES = builtinModules.filter((m) => !m.startsWith('_'))
@@ -127,7 +128,11 @@ export default defineConfig({
     swc.vite(),
     analyzer({ enabled: process.env.ANALYZER === 'true' }),
     generateExternalsPackageJson(external),
+    workerPlugin(),
   ],
+  worker: {
+    plugins: () => [workerPlugin()],
+  },
   esbuild: false,
   resolve: {
     alias: {

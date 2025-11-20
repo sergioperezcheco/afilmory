@@ -55,7 +55,15 @@ export type StorageResolution = {
   builderConfig: BuilderConfig
   storageConfig: StorageConfig
   storageManager: StorageManager
+  storageProvider: InMemoryDebugStorageProvider
 }
+
+export type DebugStorageFileRecord = {
+  key: string
+  metadata: StorageObject
+  buffer: Buffer
+}
+
 export class InMemoryDebugStorageProvider implements StorageProvider {
   private readonly files = new Map<
     string,
@@ -64,6 +72,17 @@ export class InMemoryDebugStorageProvider implements StorageProvider {
       metadata: StorageObject
     }
   >()
+
+  constructor(initialFiles?: DebugStorageFileRecord[]) {
+    if (initialFiles?.length) {
+      for (const file of initialFiles) {
+        this.files.set(file.key, {
+          buffer: Buffer.from(file.buffer),
+          metadata: { ...file.metadata },
+        })
+      }
+    }
+  }
 
   async getFile(key: string): Promise<Buffer | null> {
     return this.files.get(key)?.buffer ?? null
@@ -140,5 +159,13 @@ export class InMemoryDebugStorageProvider implements StorageProvider {
 
   private normalizeKey(key: string): string {
     return key.replaceAll('\\', '/').replaceAll(/^\/+|\/+$/g, '')
+  }
+
+  exportSnapshot(): DebugStorageFileRecord[] {
+    return Array.from(this.files.entries()).map(([key, entry]) => ({
+      key,
+      buffer: Buffer.from(entry.buffer),
+      metadata: { ...entry.metadata },
+    }))
   }
 }

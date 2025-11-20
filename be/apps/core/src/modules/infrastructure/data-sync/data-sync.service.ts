@@ -1,6 +1,13 @@
 import { createHash } from 'node:crypto'
 
-import type { BuilderConfig, PhotoManifestItem, StorageConfig, StorageManager, StorageObject } from '@afilmory/builder'
+import type {
+  BuilderConfig,
+  PhotoManifestItem,
+  PhotoProcessorOptions,
+  StorageConfig,
+  StorageManager,
+  StorageObject,
+} from '@afilmory/builder'
 import type { PhotoAssetConflictPayload, PhotoAssetConflictSnapshot, PhotoAssetManifest } from '@afilmory/db'
 import { CURRENT_PHOTO_MANIFEST_VERSION, DATABASE_ONLY_PROVIDER, photoAssets, photoSyncRuns } from '@afilmory/db'
 import { createLogger, EventEmitterService } from '@afilmory/framework'
@@ -12,6 +19,8 @@ import { BILLING_USAGE_EVENT } from 'core/modules/platform/billing/billing.const
 import { BillingPlanService } from 'core/modules/platform/billing/billing-plan.service'
 import { BillingUsageService } from 'core/modules/platform/billing/billing-usage.service'
 import { requireTenantContext } from 'core/modules/platform/tenant/tenant.context'
+import { BuilderWorkerHost } from 'core/workers/builder/builder-worker.host'
+import type { BuilderWorkerLogEvent } from 'core/workers/builder/builder-worker.types'
 import { and, desc, eq } from 'drizzle-orm'
 import { injectable } from 'tsyringe'
 
@@ -57,6 +66,7 @@ type PhotoSyncRunRow = typeof photoSyncRuns.$inferSelect
 interface SyncPreparation {
   tenantId: string
   builder: ReturnType<PhotoBuilderService['createBuilder']>
+  builderConfig: BuilderConfig
   storageManager: StorageManager
   effectiveStorageConfig: StorageConfig
   storageObjects: StorageObject[]
@@ -78,6 +88,7 @@ export class DataSyncService {
     private readonly eventEmitter: EventEmitterService,
     private readonly dbAccessor: DbAccessor,
     private readonly photoBuilderService: PhotoBuilderService,
+    private readonly builderWorkerHost: BuilderWorkerHost,
     private readonly photoStorageService: PhotoStorageService,
     private readonly billingPlanService: BillingPlanService,
     private readonly billingUsageService: BillingUsageService,
@@ -382,6 +393,7 @@ export class DataSyncService {
     return {
       tenantId,
       builder,
+      builderConfig,
       storageManager,
       effectiveStorageConfig,
       storageObjects,
@@ -433,7 +445,7 @@ export class DataSyncService {
     }
 
     const livePhotoMap = await this.ensureLivePhotoMap(context, dryRun)
-    const { db, tenantId, effectiveStorageConfig, builder } = context
+    const { db, tenantId, effectiveStorageConfig, builderConfig } = context
     let processed = 0
 
     for (const storageObject of context.missingInDb) {
@@ -465,13 +477,20 @@ export class DataSyncService {
         continue
       }
 
-      const result = await this.safeProcessStorageObject(storageObject, builder, {
-        livePhotoMap,
-        progress: {
-          emitter: onProgress,
-          stage: 'missing-in-db',
+      const result = await this.safeProcessStorageObject(
+        storageObject,
+        {
+          builderConfig,
+          storageConfig: effectiveStorageConfig,
         },
-      })
+        {
+          livePhotoMap,
+          progress: {
+            emitter: onProgress,
+            stage: 'missing-in-db',
+          },
+        },
+      )
 
       if (!result?.item) {
         summary.errors += 1
@@ -1254,10 +1273,14 @@ export class DataSyncService {
 
   private async safeProcessStorageObject(
     storageObject: StorageObject,
-    builder: ReturnType<PhotoBuilderService['createBuilder']>,
+    builderContext: {
+      builderConfig: BuilderConfig
+      storageConfig: StorageConfig
+    },
     options: {
       existing?: PhotoManifestItem | null
       livePhotoMap?: Map<string, StorageObject>
+      processorOptions?: Partial<PhotoProcessorOptions>
       progress?: {
         emitter?: DataSyncProgressEmitter
         stage?: DataSyncProgressStage | null
@@ -1279,15 +1302,25 @@ export class DataSyncService {
       },
     })
 
+    const baseProcessorOptions: Partial<PhotoProcessorOptions> = {
+      isForceMode: true,
+      isForceManifest: true,
+    }
+
     try {
-      const result = await this.photoBuilderService.processPhotoFromStorageObject(storageObject, {
+      const result = await this.builderWorkerHost.processPhoto({
+        builderConfig: builderContext.builderConfig,
+        storageConfig: builderContext.storageConfig,
+        storageObject,
         existingItem: options.existing ?? undefined,
         livePhotoMap: options.livePhotoMap,
         processorOptions: {
-          isForceMode: true,
-          isForceManifest: true,
+          ...baseProcessorOptions,
+          ...options.processorOptions,
         },
-        builder,
+        logHandler: emitter
+          ? (event) => this.forwardBuilderLog(event, emitter, stage, storageObject.key)
+          : undefined,
       })
 
       if (result?.item) {
@@ -1328,6 +1361,29 @@ export class DataSyncService {
       this.logger.error('Failed to process storage object', err)
       return null
     }
+  }
+
+  private forwardBuilderLog(
+    event: BuilderWorkerLogEvent,
+    emitter: DataSyncProgressEmitter | undefined,
+    stage: DataSyncProgressStage | null,
+    storageKey: string,
+  ): void {
+    if (!emitter) {
+      return
+    }
+
+    void this.emitLog(emitter, {
+      level: event.level as DataSyncLogLevel,
+      message: event.message,
+      stage,
+      storageKey,
+      details: {
+        ...(event.details ?? {}),
+        tag: event.tag ?? undefined,
+        source: event.details?.source ?? 'builder',
+      },
+    })
   }
 
   private createStorageSnapshot(object: StorageObject): SyncObjectSnapshot {
@@ -1614,6 +1670,10 @@ export class DataSyncService {
 
     await builder.ensurePluginsReady()
     const storageManager = builder.getStorageManager()
+    const builderContext = {
+      builderConfig,
+      storageConfig: effectiveStorageConfig,
+    }
 
     if (payload.type === 'missing-in-storage') {
       if (dryRun) {
@@ -1666,9 +1726,13 @@ export class DataSyncService {
         })
       }
 
-      const processResult = await this.safeProcessStorageObject(storageObject, builder, {
-        existing: record.manifest?.data as PhotoManifestItem | undefined,
-      })
+      const processResult = await this.safeProcessStorageObject(
+        storageObject,
+        builderContext,
+        {
+          existing: record.manifest?.data as PhotoManifestItem | undefined,
+        },
+      )
       if (!processResult?.item) {
         throw new BizException(ErrorCode.IMAGE_PROCESSING_FAILED, {
           message: 'Failed to reprocess incoming storage object.',
@@ -1726,9 +1790,13 @@ export class DataSyncService {
       })
     }
 
-    const processResult = await this.safeProcessStorageObject(storageObject, builder, {
-      existing: record.manifest?.data as PhotoManifestItem | undefined,
-    })
+    const processResult = await this.safeProcessStorageObject(
+      storageObject,
+      builderContext,
+      {
+        existing: record.manifest?.data as PhotoManifestItem | undefined,
+      },
+    )
     if (!processResult?.item) {
       throw new BizException(ErrorCode.IMAGE_PROCESSING_FAILED, { message: 'Failed to reprocess storage object.' })
     }
