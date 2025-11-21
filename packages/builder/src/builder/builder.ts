@@ -4,9 +4,6 @@ import { thumbnailExists } from '../image/thumbnail.js'
 import { logger } from '../logger/index.js'
 import { handleDeletedPhotos, loadExistingManifest, needsUpdate, saveManifest } from '../manifest/manager.js'
 import { CURRENT_MANIFEST_VERSION } from '../manifest/version.js'
-import { createStorageKeyNormalizer, runWithPhotoExecutionContext } from '../photo/execution-context.js'
-import { createGeocodingProvider, parseGPSCoordinates } from '../photo/geocoding.js'
-import { createPhotoProcessingLoggers } from '../photo/logger-adapter.js'
 import type { PhotoProcessorOptions } from '../photo/processor.js'
 import { processPhoto } from '../photo/processor.js'
 import type { PluginRunState } from '../plugins/manager.js'
@@ -21,7 +18,7 @@ import type { StorageConfig } from '../storage/index.js'
 import { StorageFactory, StorageManager } from '../storage/index.js'
 import type { BuilderConfig, UserBuilderSettings } from '../types/config.js'
 import type { AfilmoryManifest, CameraInfo, LensInfo } from '../types/manifest.js'
-import type { LocationInfo, PhotoManifestItem, ProcessPhotoResult } from '../types/photo.js'
+import type { PhotoManifestItem, ProcessPhotoResult } from '../types/photo.js'
 import { ClusterPool } from '../worker/cluster-pool.js'
 import type { TaskCompletedPayload } from '../worker/pool.js'
 import { WorkerPool } from '../worker/pool.js'
@@ -420,13 +417,6 @@ export class AfilmoryBuilder {
         })
       }
 
-      const locationRetryStats = await this.retryMissingLocations(manifest)
-      if (locationRetryStats.attempted > 0) {
-        logger.main.info(
-          `📍 为 ${locationRetryStats.attempted} 张缺失位置信息的照片尝试补全，成功 ${locationRetryStats.updated} 张`,
-        )
-      }
-
       await this.emitPluginEvent(runState, 'afterProcessTasks', {
         options,
         tasks: tasksToProcess,
@@ -686,78 +676,6 @@ export class AfilmoryBuilder {
     }
 
     return this.storageManager
-  }
-
-  private async retryMissingLocations(manifest: PhotoManifestItem[]): Promise<{ attempted: number; updated: number }> {
-    const geocodingSettings = this.getUserSettings().geocoding
-    if (!geocodingSettings.enableGeocoding) {
-      return { attempted: 0, updated: 0 }
-    }
-
-    const provider = createGeocodingProvider(
-      geocodingSettings.geocodingProvider || 'auto',
-      geocodingSettings.mapboxToken,
-      geocodingSettings.nominatimBaseUrl,
-    )
-
-    if (!provider) {
-      return { attempted: 0, updated: 0 }
-    }
-
-    const hasCandidate = manifest.some(
-      (item) =>
-        !item.location && item.exif && item.exif.GPSLatitude !== undefined && item.exif.GPSLongitude !== undefined,
-    )
-
-    if (!hasCandidate) {
-      return { attempted: 0, updated: 0 }
-    }
-
-    const storageManager = this.ensureStorageManager()
-    const storageConfig = this.getStorageConfig()
-    const normalizeStorageKey = createStorageKeyNormalizer(storageConfig)
-    const loggers = createPhotoProcessingLoggers(0, logger)
-
-    return await runWithPhotoExecutionContext(
-      {
-        builder: this,
-        storageManager,
-        storageConfig,
-        normalizeStorageKey,
-        loggers,
-      },
-      async () => {
-        const coordinateCache = new Map<string, LocationInfo | null>()
-        let attempted = 0
-        let updated = 0
-
-        for (const item of manifest) {
-          if (item.location || !item.exif) {
-            continue
-          }
-
-          const { latitude, longitude } = parseGPSCoordinates(item.exif)
-          if (latitude === undefined || longitude === undefined) {
-            continue
-          }
-
-          const cacheKey = `${latitude.toFixed(4)},${longitude.toFixed(4)}`
-          let locationInfo = coordinateCache.get(cacheKey)
-          if (locationInfo === undefined) {
-            locationInfo = await provider.reverseGeocode(latitude, longitude)
-            coordinateCache.set(cacheKey, locationInfo ?? null)
-          }
-
-          attempted++
-          if (locationInfo) {
-            item.location = locationInfo
-            updated++
-          }
-        }
-
-        return { attempted, updated }
-      },
-    )
   }
 
   private getUserSettings(): UserBuilderSettings {

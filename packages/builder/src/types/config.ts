@@ -36,16 +36,8 @@ export interface SystemBuilderSettings {
   observability: SystemObservabilitySettings
 }
 
-export interface UserGeocodingSettings {
-  enableGeocoding: boolean
-  geocodingProvider: 'mapbox' | 'nominatim' | 'auto'
-  mapboxToken?: string
-  nominatimBaseUrl?: string
-}
-
 export interface UserBuilderSettings {
   storage: StorageConfig | null
-  geocoding: UserGeocodingSettings
 }
 
 export interface BuilderConfig {

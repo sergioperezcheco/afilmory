@@ -28,14 +28,7 @@ export function createDefaultBuilderConfig(): BuilderConfig {
         },
       },
     },
-    user: {
-      storage: null,
-      geocoding: {
-        // 地理编码默认配置
-        enableGeocoding: false, // 默认关闭，需要用户主动启用
-        geocodingProvider: 'auto',
-      },
-    },
+    user: null!,
     plugins: [],
   }
 }

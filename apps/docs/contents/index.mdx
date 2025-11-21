@@ -1,7 +1,7 @@
 ---
 title: Overview
 createdAt: 2025-07-20T22:35:03+08:00
-lastModified: 2025-11-20T23:41:32+08:00
+lastModified: 2025-11-21T21:25:29+08:00
 ---
 
 # Overview
@@ -128,12 +128,13 @@ This will automatically pull resources from the remote repository, avoiding rebu
 - `digestSuffixLength`: Digest suffix length for deterministic IDs
 - `supportedFormats`: Optional allowlist of file extensions to process
 
-#### Geocoding (`user.geocoding`)
+#### Geocoding (via `geocodingPlugin`)
 
-- `enableGeocoding`: Enable reverse geocoding from GPS coordinates (default: `false`)
-- `geocodingProvider`: Geocoding service provider (`'mapbox'` | `'nominatim'` | `'auto'`, default: `'auto'`)
+- `enable`: Enable reverse geocoding from GPS coordinates (default: `false`)
+- `provider`: Geocoding service provider (`'mapbox'` | `'nominatim'` | `'auto'`, default: `'auto'`)
 - `mapboxToken`: Mapbox access token (required when using Mapbox provider)
 - `nominatimBaseUrl`: Custom Nominatim base URL (optional, defaults to OpenStreetMap's public instance)
+- `cachePrecision`: Coordinate cache precision (decimals, default: `4`)
 
 #### System Observability (`system.observability`)
 
@@ -148,34 +149,40 @@ This will automatically pull resources from the remote repository, avoiding rebu
 
 #### Geocoding Configuration Example
 
-To enable reverse geocoding, configure the geocoding provider under `user.geocoding` in your `builder.config.ts`:
+Enable reverse geocoding by adding the geocoding plugin in `builder.config.ts`:
 
 **Using Nominatim (Free, but rate-limited):**
 
 ```typescript
-{
-  user: {
-    geocoding: {
-      enableGeocoding: true,
+import { defineBuilderConfig, geocodingPlugin } from '@afilmory/builder'
+
+export default defineBuilderConfig(() => ({
+  plugins: [
+    geocodingPlugin({
+      enable: true,
+      provider: 'nominatim',
       // Optional: use custom Nominatim instance
       // nominatimBaseUrl: 'https://your-nominatim-instance.com'
-    },
-  },
-}
+    }),
+  ],
+}))
 
 ```
 
 **Using Mapbox:**
 
 ```typescript
-{
-  user: {
-    geocoding: {
-      enableGeocoding: true,
+import { defineBuilderConfig, geocodingPlugin } from '@afilmory/builder'
+
+export default defineBuilderConfig(() => ({
+  plugins: [
+    geocodingPlugin({
+      enable: true,
+      provider: 'mapbox',
       mapboxToken: process.env.MAPBOX_TOKEN,
-    },
-  },
-}
+    }),
+  ],
+}))
 ```
 
 **Notes:**
@@ -183,6 +190,7 @@ To enable reverse geocoding, configure the geocoding provider under `user.geocod
 - Nominatim is free but has strict rate limits (1 request/second)
 - Both providers support intelligent caching to minimize API calls
 - Location data includes country, city, and location name extracted from GPS coordinates
+- Reverse geocoding is handled by the built-in geocoding plugin and runs only when the plugin is added to `plugins` with `enable: true`
 
 ## 📋 CLI Commands
 

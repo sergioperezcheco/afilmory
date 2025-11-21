@@ -55,12 +55,6 @@ export default defineBuilderConfig(() => ({
       },
     },
   },
-  user: {
-    geocoding: {
-      enableGeocoding: false,
-      geocodingProvider: 'auto',
-    },
-  },
   // plugins: [thumbnailStoragePlugin()],
   plugins: [
     githubRepoSyncPlugin({
