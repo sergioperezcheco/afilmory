@@ -107,6 +107,7 @@ export default defineBuilderConfig(() => ({
       enable: true,
       provider: 'auto',
       mapboxToken: process.env.MAPBOX_TOKEN,
+      // language: 'en,zh', // 可选，按需设置语言
       // nominatimBaseUrl: 'https://your-nominatim-instance.com',
     }),
   ],

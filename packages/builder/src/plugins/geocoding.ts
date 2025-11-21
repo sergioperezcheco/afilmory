@@ -21,6 +21,10 @@ interface GeocodingPluginOptions {
   mapboxToken?: string
   nominatimBaseUrl?: string
   cachePrecision?: number
+  /**
+   * Preferred languages for geocoding results (BCP47). Accepts comma-separated string or array.
+   */
+  language?: string | string[]
 }
 type GeocodingPluginOptionsResolved = Required<Pick<GeocodingPluginOptions, 'enable' | 'provider'>> &
   Pick<GeocodingPluginOptions, 'mapboxToken' | 'nominatimBaseUrl' | 'cachePrecision'> & {
@@ -32,6 +36,7 @@ interface ResolvedGeocodingSettings {
   mapboxToken?: string
   nominatimBaseUrl?: string
   cachePrecision: number
+  language: string | null
 }
 
 interface GeocodingState {
@@ -70,6 +75,7 @@ function resolveSettings(options: GeocodingPluginOptions): GeocodingPluginOption
     mapboxToken: options.mapboxToken,
     nominatimBaseUrl: options.nominatimBaseUrl,
     cachePrecision: normalizeCachePrecision(options.cachePrecision ?? DEFAULT_CACHE_PRECISION),
+    language: normalizeLanguage(options.language),
   }
 }
 
@@ -89,7 +95,7 @@ function getOrCreateState(runShared: Map<string, unknown>): GeocodingState {
 }
 
 function buildProviderKey(settings: ResolvedGeocodingSettings): string {
-  return `${settings.provider}:${settings.mapboxToken ?? ''}:${settings.nominatimBaseUrl ?? ''}`
+  return `${settings.provider}:${settings.mapboxToken ?? ''}:${settings.nominatimBaseUrl ?? ''}:${settings.language ?? ''}`
 }
 
 function ensureProvider(
@@ -102,7 +108,16 @@ function ensureProvider(
     return state.provider
   }
 
-  const provider = createGeocodingProvider(settings.provider, settings.mapboxToken, settings.nominatimBaseUrl)
+  if (state.providerKey && state.providerKey !== providerKey) {
+    state.cache.clear()
+  }
+
+  const provider = createGeocodingProvider(
+    settings.provider,
+    settings.mapboxToken,
+    settings.nominatimBaseUrl,
+    settings.language ?? undefined,
+  )
 
   if (!provider) {
     logger.warn('无法创建地理编码提供者，请检查 geocoding 配置和 Token')

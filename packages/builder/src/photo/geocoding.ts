@@ -163,6 +163,7 @@ export interface GeocodingProvider {
  */
 export class MapboxGeocodingProvider implements GeocodingProvider {
   private readonly accessToken: string
+  private readonly language: string | null
   private readonly baseUrl = 'https://api.mapbox.com'
   private readonly rateLimitMs = 100 // Mapbox 速率限制：1000次/分钟
   private readonly rateLimiter: SequentialRateLimiter
@@ -170,8 +171,9 @@ export class MapboxGeocodingProvider implements GeocodingProvider {
   private readonly maxRetries = 3
   private readonly retryBaseDelayMs = 500
 
-  constructor(accessToken: string) {
+  constructor(accessToken: string, language?: string | null) {
     this.accessToken = accessToken
+    this.language = language ?? null
     this.rateLimiter = getGlobalRateLimiter(`mapbox:${accessToken}`, this.rateLimitMs)
     this.interprocessKey = `mapbox:${accessToken}`
   }
@@ -187,8 +189,9 @@ export class MapboxGeocodingProvider implements GeocodingProvider {
         url.searchParams.set('access_token', this.accessToken)
         url.searchParams.set('longitude', lon.toString())
         url.searchParams.set('latitude', lat.toString())
-        url.searchParams.set('types', 'address,place,district,region,country')
-        url.searchParams.set('language', 'zh-Hants')
+        if (this.language) {
+          url.searchParams.set('language', this.language)
+        }
 
         log.info(`调用 Mapbox API: ${lat}, ${lon}`)
 
@@ -266,6 +269,7 @@ export class MapboxGeocodingProvider implements GeocodingProvider {
  */
 export class NominatimGeocodingProvider implements GeocodingProvider {
   private readonly baseUrl: string
+  private readonly language: string | null
   private readonly userAgent = 'afilmory/1.0'
   private readonly rateLimitMs = 1000 // Nominatim 要求至少1秒间隔
   private readonly rateLimiter: SequentialRateLimiter
@@ -273,8 +277,9 @@ export class NominatimGeocodingProvider implements GeocodingProvider {
   private readonly maxRetries = 3
   private readonly retryBaseDelayMs = 1000
 
-  constructor(baseUrl?: string) {
+  constructor(baseUrl?: string, language?: string | null) {
     this.baseUrl = baseUrl || 'https://nominatim.openstreetmap.org'
+    this.language = language ?? null
     this.rateLimiter = getGlobalRateLimiter(`nominatim:${this.baseUrl}`, this.rateLimitMs)
     this.interprocessKey = `nominatim:${this.baseUrl}`
   }
@@ -291,13 +296,16 @@ export class NominatimGeocodingProvider implements GeocodingProvider {
         url.searchParams.set('lon', lon.toString())
         url.searchParams.set('format', 'json')
         url.searchParams.set('addressdetails', '1')
-        url.searchParams.set('accept-language', 'zh-CN,zh,en')
+        if (this.language) {
+          url.searchParams.set('accept-language', this.language)
+        }
 
         log.info(`调用 Nominatim API: ${lat}, ${lon}`)
 
         const response = await fetch(url.toString(), {
           headers: {
             'User-Agent': this.userAgent,
+            ...(this.language ? { 'Accept-Language': this.language } : {}),
           },
         })
 
@@ -372,20 +380,22 @@ export class NominatimGeocodingProvider implements GeocodingProvider {
  * @param provider 提供者类型
  * @param mapboxToken Mapbox access token（可选）
  * @param nominatimBaseUrl Nominatim 基础 URL（可选）
+ * @param language 首选语言（可选，逗号分隔的 BCP47 列表）
  */
 export function createGeocodingProvider(
   provider: 'mapbox' | 'nominatim' | 'auto',
   mapboxToken?: string,
   nominatimBaseUrl?: string,
+  language?: string | null,
 ): GeocodingProvider | null {
   // 如果指定了 Mapbox 或自动模式且有 token，使用 Mapbox
   if ((provider === 'mapbox' || provider === 'auto') && mapboxToken) {
-    return new MapboxGeocodingProvider(mapboxToken)
+    return new MapboxGeocodingProvider(mapboxToken, language)
   }
 
   // 使用 Nominatim
   if (provider === 'nominatim' || provider === 'auto') {
-    return new NominatimGeocodingProvider(nominatimBaseUrl)
+    return new NominatimGeocodingProvider(nominatimBaseUrl, language)
   }
 
   return null
