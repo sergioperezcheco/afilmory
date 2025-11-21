@@ -2,10 +2,18 @@ import type { PhotoManifestItem } from '@afilmory/builder'
 
 import type { BillingUsageTotalsEntry, PhotoAssetListItem, PhotoSyncLogLevel } from '../photos/types'
 import type { SchemaFormValue, UiSchema } from '../schema-form/types'
+import type { StorageProvider } from '../storage-providers/types'
 
 export type SuperAdminSettingField = string
 
 export type SuperAdminSettings = Record<SuperAdminSettingField, SchemaFormValue | undefined>
+export type SuperAdminSettingsWithStorage = SuperAdminSettings & {
+  storagePlanCatalog?: Record<string, unknown>
+  storagePlanPricing?: Record<string, unknown>
+  storagePlanProducts?: Record<string, unknown>
+  managedStorageProvider?: string | null
+  managedStorageProviders?: StorageProvider[]
+}
 
 export interface SuperAdminStats {
   totalUsers: number
@@ -27,9 +35,10 @@ export type SuperAdminSettingsResponse =
       values?: never
     })
 
-export type UpdateSuperAdminSettingsPayload = Partial<
-  Record<SuperAdminSettingField, SchemaFormValue | null | undefined>
->
+export type UpdateSuperAdminSettingsPayload = Partial<{
+  managedStorageProvider: string | null
+  managedStorageProviders: StorageProvider[]
+}>
 
 export type BuilderDebugProgressEvent =
   | {

@@ -43,6 +43,13 @@
       "when": 1763626275917,
       "tag": "0005_flawless_wild_pack",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1763656041992,
+      "tag": "0006_quick_titania",
+      "breakpoints": true
     }
   ]
 }

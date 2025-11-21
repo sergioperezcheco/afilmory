@@ -1,4 +1,4 @@
-import { Controller, createZodSchemaDto, Get, Query } from '@afilmory/framework'
+import { Body, Controller, createZodSchemaDto, Get, Patch, Query } from '@afilmory/framework'
 import { Roles } from 'core/guards/roles.decorator'
 import { inject } from 'tsyringe'
 import z from 'zod'
@@ -7,11 +7,17 @@ import type { BillingPlanSummary } from './billing-plan.service'
 import { BillingPlanService } from './billing-plan.service'
 import type { BillingUsageOverview } from './billing-usage.service'
 import { BillingUsageService } from './billing-usage.service'
+import { StoragePlanService } from './storage-plan.service'
 
 const usageQuerySchema = z.object({
   limit: z.coerce.number().positive().int().optional().default(10),
 })
 class UsageQueryDto extends createZodSchemaDto(usageQuerySchema) {}
+
+const updateStoragePlanSchema = z.object({
+  planId: z.string().trim().min(1).nullable().optional(),
+})
+class UpdateStoragePlanDto extends createZodSchemaDto(updateStoragePlanSchema) {}
 
 @Controller('billing')
 @Roles('admin')
@@ -19,6 +25,7 @@ export class BillingController {
   constructor(
     @inject(BillingUsageService) private readonly billingUsageService: BillingUsageService,
     @inject(BillingPlanService) private readonly billingPlanService: BillingPlanService,
+    @inject(StoragePlanService) private readonly storagePlanService: StoragePlanService,
   ) {}
 
   @Get('usage')
@@ -33,5 +40,16 @@ export class BillingController {
       this.billingPlanService.getPublicPlanSummaries(),
     ])
     return { plan, availablePlans }
+  }
+
+  @Get('storage')
+  async getStoragePlans() {
+    return await this.storagePlanService.getOverviewForCurrentTenant()
+  }
+
+  @Patch('storage')
+  async updateStoragePlan(@Body() payload: UpdateStoragePlanDto) {
+    const planId = payload.planId ?? null
+    return await this.storagePlanService.updateCurrentTenantPlan(planId)
   }
 }

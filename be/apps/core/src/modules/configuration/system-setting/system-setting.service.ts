@@ -16,12 +16,24 @@ import type {
   BillingPlanProductConfigs,
   BillingPlanQuota,
 } from 'core/modules/platform/billing/billing-plan.types'
+import type {
+  StoragePlanCatalog,
+  StoragePlanPricingConfigs,
+  StoragePlanProductConfigs,
+} from 'core/modules/platform/billing/storage-plan.types'
 import { sql } from 'drizzle-orm'
 import { injectable } from 'tsyringe'
 import type { ZodType } from 'zod'
 import { z } from 'zod'
 
 import { getUiSchemaTranslator } from '../../ui/ui-schema/ui-schema.i18n'
+import type { BuilderStorageProvider } from '../setting/storage-provider.utils'
+import {
+  maskStorageProviderSecrets,
+  mergeStorageProviderSecrets,
+  parseStorageProviders,
+  serializeStorageProviders,
+} from '../setting/storage-provider.utils'
 import type { SystemSettingDbField } from './system-setting.constants'
 import {
   BILLING_PLAN_FIELD_DESCRIPTORS,
@@ -135,6 +147,29 @@ export class SystemSettingService {
       BILLING_PLAN_PRICING_SCHEMA,
       {},
     ) as BillingPlanPricingConfigs
+    const storagePlanCatalog = this.parseSetting(
+      rawValues[SYSTEM_SETTING_DEFINITIONS.storagePlanCatalog.key],
+      STORAGE_PLAN_CATALOG_SCHEMA,
+      SYSTEM_SETTING_DEFINITIONS.storagePlanCatalog.defaultValue as StoragePlanCatalog,
+    ) as StoragePlanCatalog
+    const storagePlanProducts = this.parseSetting(
+      rawValues[SYSTEM_SETTING_DEFINITIONS.storagePlanProducts.key],
+      STORAGE_PLAN_PRODUCTS_SCHEMA,
+      {},
+    ) as StoragePlanProductConfigs
+    const storagePlanPricing = this.parseSetting(
+      rawValues[SYSTEM_SETTING_DEFINITIONS.storagePlanPricing.key],
+      STORAGE_PLAN_PRICING_SCHEMA,
+      {},
+    ) as StoragePlanPricingConfigs
+    const managedStorageProvider = this.parseSetting(
+      rawValues[SYSTEM_SETTING_DEFINITIONS.managedStorageProvider.key],
+      SYSTEM_SETTING_DEFINITIONS.managedStorageProvider.schema,
+      SYSTEM_SETTING_DEFINITIONS.managedStorageProvider.defaultValue,
+    )
+    const managedStorageProviders = this.parseManagedStorageProviders(
+      rawValues[SYSTEM_SETTING_DEFINITIONS.managedStorageProviders.key],
+    )
     return {
       allowRegistration,
       maxRegistrableUsers,
@@ -151,6 +186,11 @@ export class SystemSettingService {
       billingPlanOverrides,
       billingPlanProducts,
       billingPlanPricing,
+      storagePlanCatalog,
+      storagePlanProducts,
+      storagePlanPricing,
+      managedStorageProvider,
+      managedStorageProviders,
     }
   }
 
@@ -167,6 +207,26 @@ export class SystemSettingService {
   async getBillingPlanPricing(): Promise<BillingPlanPricingConfigs> {
     const settings = await this.getSettings()
     return settings.billingPlanPricing ?? {}
+  }
+
+  async getStoragePlanCatalog(): Promise<StoragePlanCatalog> {
+    const settings = await this.getSettings()
+    return settings.storagePlanCatalog ?? {}
+  }
+
+  async getStoragePlanProducts(): Promise<StoragePlanProductConfigs> {
+    const settings = await this.getSettings()
+    return settings.storagePlanProducts ?? {}
+  }
+
+  async getStoragePlanPricing(): Promise<StoragePlanPricingConfigs> {
+    const settings = await this.getSettings()
+    return settings.storagePlanPricing ?? {}
+  }
+
+  async getManagedStorageProviderKey(): Promise<string | null> {
+    const settings = await this.getSettings()
+    return settings.managedStorageProvider ?? null
   }
 
   async getOverview(): Promise<SystemSettingOverview> {
@@ -194,9 +254,17 @@ export class SystemSettingService {
 
     const updates: Array<{ field: SystemSettingDbField; value: unknown }> = []
 
-    const enqueueUpdate = <K extends SystemSettingDbField>(field: K, value: unknown) => {
+    const enqueueUpdate = <K extends SystemSettingDbField>(
+      field: K,
+      value: unknown,
+      currentValue?: SystemSettings[K],
+    ) => {
       updates.push({ field, value })
-      ;(current as unknown as Record<string, unknown>)[field] = value
+      if (currentValue !== undefined) {
+        ;(current as unknown as Record<string, unknown>)[field] = currentValue
+      } else {
+        ;(current as unknown as Record<string, unknown>)[field] = value
+      }
     }
 
     if (patch.allowRegistration !== undefined && patch.allowRegistration !== current.allowRegistration) {
@@ -287,6 +355,37 @@ export class SystemSettingService {
       }
     }
 
+    if (patch.storagePlanCatalog !== undefined) {
+      const parsed = STORAGE_PLAN_CATALOG_SCHEMA.parse(patch.storagePlanCatalog)
+      enqueueUpdate('storagePlanCatalog', parsed)
+    }
+
+    if (patch.storagePlanProducts !== undefined) {
+      const parsed = STORAGE_PLAN_PRODUCTS_SCHEMA.parse(patch.storagePlanProducts)
+      enqueueUpdate('storagePlanProducts', parsed)
+    }
+
+    if (patch.storagePlanPricing !== undefined) {
+      const parsed = STORAGE_PLAN_PRICING_SCHEMA.parse(patch.storagePlanPricing)
+      enqueueUpdate('storagePlanPricing', parsed)
+    }
+
+    if (patch.managedStorageProvider !== undefined && patch.managedStorageProvider !== current.managedStorageProvider) {
+      enqueueUpdate('managedStorageProvider', this.normalizeNullableString(patch.managedStorageProvider))
+    }
+
+    if (patch.managedStorageProviders !== undefined) {
+      const normalizedProviders = this.normalizeManagedStorageProvidersPatch(
+        patch.managedStorageProviders,
+        current.managedStorageProviders ?? [],
+      )
+      const nextSerialized = serializeStorageProviders(normalizedProviders)
+      const currentSerialized = serializeStorageProviders(current.managedStorageProviders ?? [])
+      if (nextSerialized !== currentSerialized) {
+        enqueueUpdate('managedStorageProviders', nextSerialized, normalizedProviders)
+      }
+    }
+
     if (updates.length === 0) {
       return current
     }
@@ -309,6 +408,10 @@ export class SystemSettingService {
     const map = {} as SystemSettingValueMap
 
     ;(Object.keys(SYSTEM_SETTING_DEFINITIONS) as SystemSettingDbField[]).forEach((field) => {
+      if (field === 'managedStorageProviders') {
+        ;(map as Record<string, unknown>)[field] = maskStorageProviderSecrets(settings.managedStorageProviders ?? [])
+        return
+      }
       ;(map as Record<string, unknown>)[field] = settings[field]
     })
 
@@ -340,6 +443,51 @@ export class SystemSettingService {
     })
 
     return map
+  }
+
+  private parseManagedStorageProviders(raw: unknown): BuilderStorageProvider[] {
+    if (!raw) {
+      return []
+    }
+
+    if (Array.isArray(raw) || typeof raw === 'object') {
+      try {
+        return parseStorageProviders(JSON.stringify(raw))
+      } catch {
+        return []
+      }
+    }
+
+    if (typeof raw === 'string') {
+      const normalized = raw.trim()
+      if (!normalized) {
+        return []
+      }
+      return parseStorageProviders(normalized)
+    }
+
+    return []
+  }
+
+  private normalizeManagedStorageProvidersPatch(
+    patch: unknown,
+    current: BuilderStorageProvider[],
+  ): BuilderStorageProvider[] {
+    let normalized: string
+    if (typeof patch === 'string') {
+      normalized = patch
+    } else if (patch == null) {
+      normalized = '[]'
+    } else {
+      try {
+        normalized = JSON.stringify(patch)
+      } catch {
+        normalized = '[]'
+      }
+    }
+
+    const incoming = parseStorageProviders(normalized)
+    return mergeStorageProviderSecrets(incoming, current ?? [])
   }
 
   private extractPlanFieldUpdates(patch: UpdateSystemSettingsInput): PlanFieldUpdateSummary {
@@ -607,6 +755,17 @@ const PLAN_PRICING_ENTRY_SCHEMA = z.object({
 })
 
 const BILLING_PLAN_PRICING_SCHEMA = z.record(z.string(), PLAN_PRICING_ENTRY_SCHEMA).default({})
+
+const STORAGE_PLAN_CATALOG_ENTRY_SCHEMA = z.object({
+  name: z.string().trim().min(1),
+  description: z.string().trim().nullable().optional(),
+  capacityBytes: z.number().int().min(0).nullable().optional(),
+  isActive: z.boolean().optional(),
+})
+
+const STORAGE_PLAN_CATALOG_SCHEMA = z.record(z.string(), STORAGE_PLAN_CATALOG_ENTRY_SCHEMA).default({})
+const STORAGE_PLAN_PRODUCTS_SCHEMA = z.record(z.string(), PLAN_PRODUCT_ENTRY_SCHEMA).default({})
+const STORAGE_PLAN_PRICING_SCHEMA = z.record(z.string(), PLAN_PRICING_ENTRY_SCHEMA).default({})
 
 type PlanQuotaUpdateMap = Partial<Record<BillingPlanId, Partial<BillingPlanQuota>>>
 type PlanPricingUpdateMap = Partial<Record<BillingPlanId, Partial<BillingPlanPricing>>>

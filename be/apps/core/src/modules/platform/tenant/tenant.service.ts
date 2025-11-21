@@ -16,7 +16,12 @@ import type { TenantAggregate, TenantContext, TenantResolutionInput } from './te
 export class TenantService {
   constructor(private readonly repository: TenantRepository) {}
 
-  async createTenant(payload: { name: string; slug: string; planId?: BillingPlanId }): Promise<TenantAggregate> {
+  async createTenant(payload: {
+    name: string
+    slug: string
+    planId?: BillingPlanId
+    storagePlanId?: string | null
+  }): Promise<TenantAggregate> {
     const normalizedSlug = this.normalizeSlug(payload.slug)
 
     if (!normalizedSlug) {

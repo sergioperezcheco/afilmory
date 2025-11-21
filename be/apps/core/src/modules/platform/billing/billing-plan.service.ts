@@ -50,6 +50,21 @@ export class BillingPlanService {
     return this.applyOverrides(definition.quotas, overrides[planId])
   }
 
+  async getPlanIdForTenant(tenantId: string): Promise<BillingPlanId> {
+    return await this.resolvePlanIdForTenant(tenantId)
+  }
+
+  getIncludedStorageBytes(planId: BillingPlanId): number {
+    const definition = BILLING_PLAN_DEFINITIONS[planId]
+    if (!definition) {
+      return 0
+    }
+    if (definition.includedStorageBytes === null) {
+      return Number.POSITIVE_INFINITY
+    }
+    return definition.includedStorageBytes ?? 0
+  }
+
   getPlanDefinitions(): BillingPlanDefinition[] {
     return BILLING_PLAN_IDS.map((id) => {
       const definition = BILLING_PLAN_DEFINITIONS[id]

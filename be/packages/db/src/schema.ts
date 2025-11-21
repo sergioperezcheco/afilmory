@@ -62,6 +62,7 @@ export const tenants = pgTable(
     slug: text('slug').notNull(),
     name: text('name').notNull(),
     planId: text('plan_id').notNull().default('free'),
+    storagePlanId: text('storage_plan_id'),
     banned: boolean('banned').notNull().default(false),
     status: tenantStatusEnum('status').notNull().default('inactive'),
     createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),

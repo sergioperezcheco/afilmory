@@ -255,6 +255,8 @@ export function StorageProvidersManager() {
         transition={Spring.presets.smooth}
         className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
       >
+        {/* <ManagedStorageEntryCard /> */}
+
         {orderedProviders.map((provider, index) => (
           <m.div
             key={provider.id}
