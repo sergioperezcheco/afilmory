@@ -41,7 +41,6 @@ export interface BuilderResult {
 
 export interface BuildProgressStartPayload {
   total: number
-  mode: 'worker'
   concurrency: number
 }
 
@@ -213,7 +212,6 @@ export class AfilmoryBuilder {
         options,
         tasks: tasksToProcess,
         processorOptions,
-        mode: 'worker',
         concurrency,
       })
 
@@ -287,7 +285,6 @@ export class AfilmoryBuilder {
 
         progressListener?.onStart?.({
           total: totalTasks,
-          mode: 'worker',
           concurrency,
         })
         emitProgress()

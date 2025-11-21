@@ -14,7 +14,7 @@ type RunStatus = 'idle' | 'running' | 'success' | 'error'
 interface RunMetadata {
   runMode: string
   concurrency: number
-  processingMode: 'cluster' | 'worker'
+  processingMode: 'worker'
 }
 
 interface ProgressState extends BuildProgressSnapshot {}
