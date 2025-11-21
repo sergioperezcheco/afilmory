@@ -65,8 +65,6 @@ const builderObservabilitySchema = z
         worker: z
           .object({
             timeout: z.number().int().positive().optional(),
-            useClusterMode: z.boolean().optional(),
-            workerConcurrency: z.number().int().positive().optional(),
             workerCount: z.number().int().positive().optional(),
           })
           .partial()

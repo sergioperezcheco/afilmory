@@ -22,7 +22,6 @@ const NUMBER_FIELDS: ReadonlySet<BuilderSettingField> = new Set([
   'system.processing.defaultConcurrency',
   'system.processing.digestSuffixLength',
   'system.observability.performance.worker.workerCount',
-  'system.observability.performance.worker.workerConcurrency',
   'system.observability.performance.worker.timeout',
 ])
 
@@ -32,7 +31,6 @@ const BOOLEAN_FIELDS: ReadonlySet<BuilderSettingField> = new Set([
   'system.observability.showDetailedStats',
   'system.observability.logging.verbose',
   'system.observability.logging.outputToFile',
-  'system.observability.performance.worker.useClusterMode',
 ])
 
 const SELECT_FIELDS: ReadonlySet<BuilderSettingField> = new Set(['system.observability.logging.level'])
@@ -177,8 +175,6 @@ function buildPayload(
         performance: {
           worker: {
             workerCount: getNumber('system.observability.performance.worker.workerCount', 4),
-            workerConcurrency: getNumber('system.observability.performance.worker.workerConcurrency', 2),
-            useClusterMode: getBoolean('system.observability.performance.worker.useClusterMode', true),
             timeout: getNumber('system.observability.performance.worker.timeout', 30000),
           },
         },

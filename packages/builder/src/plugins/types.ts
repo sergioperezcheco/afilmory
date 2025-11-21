@@ -73,7 +73,7 @@ export interface BuilderPluginEventPayloads {
     options: BuilderOptions
     tasks: StorageObject[]
     processorOptions: PhotoProcessorOptions
-    mode: 'cluster' | 'worker'
+    mode: 'worker'
     concurrency: number
   }
   afterProcessTasks: {

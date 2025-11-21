@@ -16,8 +16,6 @@ const loggingSchema = z.object({
 
 const workerSchema = z.object({
   workerCount: z.number().int().positive(),
-  workerConcurrency: z.number().int().positive(),
-  useClusterMode: z.boolean(),
   timeout: z.number().int().positive(),
 })
 

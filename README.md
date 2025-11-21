@@ -126,9 +126,8 @@ This will automatically pull resources from the remote repository, avoiding rebu
 - `logging.verbose`: Verbose logging
 - `logging.level`: Log level (`info` | `warn` | `error` | `debug`)
 - `logging.outputToFile`: Output to file
-- `performance.worker.workerCount`: Number of worker processes
+- `performance.worker.workerCount`: Number of concurrent workers
 - `performance.worker.timeout`: Worker timeout (milliseconds)
-- `performance.worker.useClusterMode`: Enable cluster mode
 
 ## 📋 CLI Commands
 

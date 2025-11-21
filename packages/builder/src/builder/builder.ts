@@ -19,7 +19,6 @@ import { StorageFactory, StorageManager } from '../storage/index.js'
 import type { BuilderConfig, UserBuilderSettings } from '../types/config.js'
 import type { AfilmoryManifest, CameraInfo, LensInfo } from '../types/manifest.js'
 import type { PhotoManifestItem, ProcessPhotoResult } from '../types/photo.js'
-import { ClusterPool } from '../worker/cluster-pool.js'
 import type { TaskCompletedPayload } from '../worker/pool.js'
 import { WorkerPool } from '../worker/pool.js'
 
@@ -42,7 +41,7 @@ export interface BuilderResult {
 
 export interface BuildProgressStartPayload {
   total: number
-  mode: 'worker' | 'cluster'
+  mode: 'worker'
   concurrency: number
 }
 
@@ -208,15 +207,13 @@ export class AfilmoryBuilder {
       }
 
       const concurrency = options.concurrencyLimit ?? this.config.system.processing.defaultConcurrency
-      const { useClusterMode } = this.config.system.observability.performance.worker
-      const shouldUseCluster = useClusterMode && tasksToProcess.length >= concurrency * 2
       const { progressListener } = options
 
       await this.emitPluginEvent(runState, 'beforeProcessTasks', {
         options,
         tasks: tasksToProcess,
         processorOptions,
-        mode: shouldUseCluster ? 'cluster' : 'worker',
+        mode: 'worker',
         concurrency,
       })
 
@@ -290,80 +287,54 @@ export class AfilmoryBuilder {
 
         progressListener?.onStart?.({
           total: totalTasks,
-          mode: shouldUseCluster ? 'cluster' : 'worker',
+          mode: 'worker',
           concurrency,
         })
         emitProgress()
 
-        let results: ProcessPhotoResult[]
+        logger.main.info(`开始并发处理任务，Worker数：${concurrency}`)
 
-        logger.main.info(
-          `开始${shouldUseCluster ? '多进程' : '并发'}处理任务，${shouldUseCluster ? '进程' : 'Worker'}数：${concurrency}${shouldUseCluster ? `，每进程并发：${this.config.system.observability.performance.worker.workerConcurrency}` : ''}`,
-        )
+        const workerPool = new WorkerPool<ProcessPhotoResult>({
+          concurrency,
+          totalTasks: tasksToProcess.length,
+          onTaskCompleted: handleTaskCompleted,
+        })
 
-        if (shouldUseCluster) {
-          const clusterPool = new ClusterPool<ProcessPhotoResult>({
-            concurrency,
-            totalTasks: tasksToProcess.length,
-            workerConcurrency: this.config.system.observability.performance.worker.workerConcurrency,
-            workerEnv: {
-              FORCE_MODE: processorOptions.isForceMode.toString(),
-              FORCE_MANIFEST: processorOptions.isForceManifest.toString(),
-              FORCE_THUMBNAILS: processorOptions.isForceThumbnails.toString(),
+        const results = await workerPool.execute(async (taskIndex, workerId) => {
+          const obj = tasksToProcess[taskIndex]
+
+          const legacyObj = {
+            Key: obj.key,
+            Size: obj.size,
+            LastModified: obj.lastModified,
+            ETag: obj.etag,
+          }
+
+          const legacyLivePhotoMap = new Map()
+          for (const [key, value] of livePhotoMap) {
+            legacyLivePhotoMap.set(key, {
+              Key: value.key,
+              Size: value.size,
+              LastModified: value.lastModified,
+              ETag: value.etag,
+            })
+          }
+
+          return await processPhoto(
+            legacyObj,
+            taskIndex,
+            workerId,
+            tasksToProcess.length,
+            existingManifestMap,
+            legacyLivePhotoMap,
+            processorOptions,
+            this,
+            {
+              runState,
+              builderOptions: options,
             },
-            sharedData: {
-              existingManifestMap,
-              livePhotoMap,
-              imageObjects: tasksToProcess,
-              builderConfig: this.getConfig(),
-            },
-            onTaskCompleted: handleTaskCompleted,
-          })
-
-          results = await clusterPool.execute()
-        } else {
-          const workerPool = new WorkerPool<ProcessPhotoResult>({
-            concurrency,
-            totalTasks: tasksToProcess.length,
-            onTaskCompleted: handleTaskCompleted,
-          })
-
-          results = await workerPool.execute(async (taskIndex, workerId) => {
-            const obj = tasksToProcess[taskIndex]
-
-            const legacyObj = {
-              Key: obj.key,
-              Size: obj.size,
-              LastModified: obj.lastModified,
-              ETag: obj.etag,
-            }
-
-            const legacyLivePhotoMap = new Map()
-            for (const [key, value] of livePhotoMap) {
-              legacyLivePhotoMap.set(key, {
-                Key: value.key,
-                Size: value.size,
-                LastModified: value.lastModified,
-                ETag: value.etag,
-              })
-            }
-
-            return await processPhoto(
-              legacyObj,
-              taskIndex,
-              workerId,
-              tasksToProcess.length,
-              existingManifestMap,
-              legacyLivePhotoMap,
-              processorOptions,
-              this,
-              {
-                runState,
-                builderOptions: options,
-              },
-            )
-          })
-        }
+          )
+        })
 
         processingResults.push(...results)
 

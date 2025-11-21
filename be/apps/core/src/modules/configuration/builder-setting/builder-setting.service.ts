@@ -72,9 +72,6 @@ export class BuilderSettingService {
       'system.observability.logging.verbose': system.observability.logging.verbose,
       'system.observability.logging.outputToFile': system.observability.logging.outputToFile,
       'system.observability.performance.worker.workerCount': system.observability.performance.worker.workerCount,
-      'system.observability.performance.worker.workerConcurrency':
-        system.observability.performance.worker.workerConcurrency,
-      'system.observability.performance.worker.useClusterMode': system.observability.performance.worker.useClusterMode,
       'system.observability.performance.worker.timeout': system.observability.performance.worker.timeout,
     }
   }

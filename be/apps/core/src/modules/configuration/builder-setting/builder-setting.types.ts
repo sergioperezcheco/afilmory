@@ -11,8 +11,6 @@ export const BUILDER_SETTING_FIELDS = [
   'system.observability.logging.verbose',
   'system.observability.logging.outputToFile',
   'system.observability.performance.worker.workerCount',
-  'system.observability.performance.worker.workerConcurrency',
-  'system.observability.performance.worker.useClusterMode',
   'system.observability.performance.worker.timeout',
 ] as const
 
@@ -42,8 +40,6 @@ export interface BuilderSystemLoggingSettingsDto {
 
 export interface BuilderSystemWorkerSettingsDto {
   readonly workerCount: number
-  readonly workerConcurrency: number
-  readonly useClusterMode: boolean
   readonly timeout: number
 }
 

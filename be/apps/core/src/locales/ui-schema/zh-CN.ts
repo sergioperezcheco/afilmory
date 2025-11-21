@@ -19,13 +19,9 @@ const zhCnUiSchema = {
                 description: '单次构建任务允许的最大并发处理数。',
                 helper: '建议设置为 CPU 核心数的 1-2 倍。',
               },
-              'worker-concurrency': {
-                title: 'Worker 内部并发',
-                description: '使用集群模式时，每个 Worker 进程内部允许的并发任务数。',
-              },
               'worker-count': {
                 title: '最大 Worker 数',
-                description: '集群模式下最多可启动的 Worker 进程数量。',
+                description: '最多可启动的并发 Worker 数量。',
               },
               'worker-timeout': {
                 title: 'Worker 超时时间（毫秒）',
@@ -68,10 +64,6 @@ const zhCnUiSchema = {
               'show-detailed-stats': {
                 title: '输出详细统计',
                 description: '构建完成后打印耗时、增量统计等信息。',
-              },
-              'use-cluster-mode': {
-                title: '启用集群模式',
-                description: '在多核环境下使用 Node.js Cluster 分裂多个 Worker 进程。',
               },
             },
           },

@@ -19,17 +19,13 @@ const enUiSchema = {
                 description: 'Maximum number of files processed in parallel per build run.',
                 helper: 'Recommended: 1–2× the CPU core count.',
               },
-              'worker-concurrency': {
-                title: 'Worker internal concurrency',
-                description: 'Maximum concurrent tasks inside each worker when cluster mode is enabled.',
-              },
               'worker-count': {
-                title: 'Max worker processes',
-                description: 'Upper limit of worker processes when the builder runs in cluster mode.',
+                title: 'Max worker count',
+                description: 'Upper limit of concurrent workers.',
               },
               'worker-timeout': {
                 title: 'Worker timeout (ms)',
-                description: 'Time to wait before restarting an unresponsive worker process.',
+                description: 'Time to wait before restarting an unresponsive worker.',
               },
             },
           },
@@ -57,7 +53,7 @@ const enUiSchema = {
       },
       observability: {
         title: 'Logging & Observability',
-        description: 'Tune logging level, progress outputs, and cluster behavior.',
+        description: 'Tune logging level and progress outputs.',
         groups: {
           progress: {
             title: 'Progress feedback',
@@ -69,10 +65,6 @@ const enUiSchema = {
               'show-detailed-stats': {
                 title: 'Print detailed stats',
                 description: 'Output elapsed time and delta statistics after a build finishes.',
-              },
-              'use-cluster-mode': {
-                title: 'Enable cluster mode',
-                description: 'Spawn multiple worker processes through Node.js Cluster on multi-core hosts.',
               },
             },
           },

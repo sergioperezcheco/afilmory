@@ -38,18 +38,6 @@ export function createBuilderSettingUiSchema (t: UiSchemaTFunction): UiSchema<Bu
             },
             {
               type: 'field',
-              id: 'worker-concurrency',
-              title: t('builder.sections.processing.groups.concurrency.fields.worker-concurrency.title'),
-              description: t('builder.sections.processing.groups.concurrency.fields.worker-concurrency.description'),
-              key: 'system.observability.performance.worker.workerConcurrency',
-              component: {
-                type: 'text',
-                inputType: 'number',
-                placeholder: '2',
-              },
-            },
-            {
-              type: 'field',
               id: 'worker-count',
               title: t('builder.sections.processing.groups.concurrency.fields.worker-count.title'),
               description: t('builder.sections.processing.groups.concurrency.fields.worker-count.description'),
@@ -148,16 +136,6 @@ export function createBuilderSettingUiSchema (t: UiSchemaTFunction): UiSchema<Bu
               title: t('builder.sections.observability.groups.progress.fields.show-detailed-stats.title'),
               description: t('builder.sections.observability.groups.progress.fields.show-detailed-stats.description'),
               key: 'system.observability.showDetailedStats',
-              component: {
-                type: 'switch',
-              },
-            },
-            {
-              type: 'field',
-              id: 'use-cluster-mode',
-              title: t('builder.sections.observability.groups.progress.fields.use-cluster-mode.title'),
-              description: t('builder.sections.observability.groups.progress.fields.use-cluster-mode.description'),
-              key: 'system.observability.performance.worker.useClusterMode',
               component: {
                 type: 'switch',
               },

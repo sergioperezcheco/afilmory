@@ -1,7 +1,6 @@
 import 'dotenv-expand/config'
 
 import { execSync } from 'node:child_process'
-import cluster from 'node:cluster'
 import { join } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -10,17 +9,10 @@ import type { BuildProgressListener } from './builder/builder.js'
 import { AfilmoryBuilder } from './builder/index.js'
 import { loadBuilderConfig } from './config/index.js'
 import { logger, setLogListener } from './logger/index.js'
-import { runAsWorker } from './runAsWorker.js'
 
 type BuilderTUI = import('./cli/tui.js').BuilderTUI
 
 async function main() {
-  // 检查是否作为 cluster worker 运行
-  if (process.env.CLUSTER_WORKER === 'true' || process.argv.includes('--cluster-worker') || cluster.isWorker) {
-    await runAsWorker()
-    return
-  }
-
   const builderConfig = await loadBuilderConfig({
     cwd: join(fileURLToPath(import.meta.url), '../../../..'),
   })
@@ -37,7 +29,7 @@ async function main() {
   // 显示帮助信息
   if (args.has('--help') || args.has('-h')) {
     logger.main.info(`
-照片库构建工具 (新版本 - 使用适配器模式)
+照片库构建工具
 
 用法：tsx src/core/cli.ts [选项]
 
@@ -54,10 +46,6 @@ async function main() {
   tsx src/core/cli.ts --force                   # 全量更新
   tsx src/core/cli.ts --force-thumbnails        # 强制重新生成缩略图
   tsx src/core/cli.ts --config                  # 显示配置信息
-
-配置：
-  在 builder.config.ts 中设置 performance.worker.useClusterMode = true 
-  可启用多进程集群模式，发挥多核心优势。
 
 `)
     return
@@ -98,7 +86,6 @@ async function main() {
     logger.main.info(`   照片后缀摘要长度：${config.system.processing.digestSuffixLength}`)
     logger.main.info(`   Worker 数：${config.system.observability.performance.worker.workerCount}`)
     logger.main.info(`   Worker 超时：${config.system.observability.performance.worker.timeout}ms`)
-    logger.main.info(`   集群模式：${config.system.observability.performance.worker.useClusterMode ? '启用' : '禁用'}`)
     logger.main.info('')
     if (!userConfig) {
       logger.main.warn('未配置用户级存储设置')
@@ -122,8 +109,8 @@ async function main() {
   const config = cliBuilder.getConfig()
   const concurrencyLimit = config.system.observability.performance.worker.workerCount
   const finalConcurrency = concurrencyLimit ?? config.system.processing.defaultConcurrency
-  const processingMode = config.system.observability.performance.worker.useClusterMode ? '多进程集群' : '并发线程池'
-  const processingModeKey = config.system.observability.performance.worker.useClusterMode ? 'cluster' : 'worker'
+  const processingMode = '并发线程池'
+  const processingModeKey = 'worker'
 
   const useTui = process.stdout.isTTY && !disableUi
   let tui: BuilderTUI | null = null
