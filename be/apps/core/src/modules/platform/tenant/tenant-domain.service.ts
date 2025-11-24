@@ -15,6 +15,7 @@ import { TenantDomainRepository } from './tenant-domain.repository'
 @injectable()
 export class TenantDomainService {
   private readonly log = logger.extend('TenantDomainService')
+  private readonly verificationTxtLabel = '_afilmory-verification'
 
   constructor(
     private readonly repository: TenantDomainRepository,
@@ -143,43 +144,125 @@ export class TenantDomainService {
 
   private async performDnsVerification(domain: TenantDomainRecord): Promise<{ ok: boolean; reason?: string }> {
     const baseDomain = await this.getBaseDomain()
-
-    const [cnameTargets, txtRecords] = await Promise.all([
-      this.resolveCname(domain.domain),
-      this.resolveTxt(domain.domain),
-    ])
-
     const normalizedBase = baseDomain.toLowerCase()
-    const cnameMatches = cnameTargets.some((target) => this.matchesBaseDomain(target, normalizedBase))
-    const txtMatches =
-      domain.verificationToken?.length > 0 && txtRecords.some((entries) => entries.includes(domain.verificationToken))
+    const token = domain.verificationToken ?? ''
 
-    if (cnameMatches || txtMatches) {
+    const txtHosts = [domain.domain, `${this.verificationTxtLabel}.${domain.domain}`]
+    this.log.verbose('Starting DNS verification', {
+      domainId: domain.id,
+      domain: domain.domain,
+      tokenPresent: token.length > 0,
+      txtHosts,
+    })
+    const txtRecordsPerHost = await Promise.all(txtHosts.map((host) => this.resolveTxt(host)))
+    const txtMatches = token.length > 0 && this.txtContainsToken(txtRecordsPerHost.flat(), token)
+
+    if (txtMatches) {
+      this.log.info('DNS verification via TXT succeeded', {
+        domainId: domain.id,
+        domain: domain.domain,
+        txtHosts,
+        txtRecords: txtRecordsPerHost,
+      })
       return { ok: true }
     }
 
+    const cnameChain = await this.resolveCnameChain(domain.domain)
+    const cnameTerminal = cnameChain.at(-1)
+    const pointsToBase = cnameTerminal ? this.matchesBaseDomain(cnameTerminal, normalizedBase) : false
+    const reasonDetails = pointsToBase
+      ? '已检测到 CNAME 指向基础域名，但缺少 TXT 验证记录'
+      : cnameChain.length > 0
+        ? `当前 CNAME 链终点为 ${cnameTerminal ?? cnameChain.at(-1)}`
+        : '未检测到 CNAME 记录'
+
+    this.log.warn('DNS verification failed', {
+      domainId: domain.id,
+      domain: domain.domain,
+      txtHosts,
+      txtMatches,
+      txtRecords: txtRecordsPerHost,
+      cnameChain,
+      pointsToBase,
+    })
+
     return {
       ok: false,
-      reason: `未检测到指向 ${normalizedBase} 的 CNAME 或包含验证 token 的 TXT 记录`,
+      reason: `未找到包含验证 token 的 TXT 记录；${reasonDetails}`,
     }
   }
 
-  private async resolveCname(domain: string): Promise<string[]> {
-    try {
-      return await dns.resolveCname(domain)
-    } catch (error) {
-      this.log.debug(`resolveCname failed for ${domain}`, error)
-      return []
+  private async resolveCnameChain(domain: string): Promise<string[]> {
+    const resolvers = await this.getResolvers(domain)
+    for (const resolver of resolvers) {
+      try {
+        const chain: string[] = []
+        const visited = new Set<string>()
+        let current = domain
+
+        while (!visited.has(current) && chain.length < 10) {
+          visited.add(current)
+          const records = await resolver.resolveCname(current)
+          if (!records?.length) break
+          const target = records[0].replace(/\.$/, '').toLowerCase()
+          chain.push(target)
+          current = target
+        }
+
+        return chain
+      } catch (error) {
+        this.log.debug(`resolveCname failed for ${domain} via resolver`, error)
+      }
     }
+    return []
   }
 
   private async resolveTxt(domain: string): Promise<string[][]> {
-    try {
-      return await dns.resolveTxt(domain)
-    } catch (error) {
-      this.log.debug(`resolveTxt failed for ${domain}`, error)
-      return []
+    const resolvers = await this.getResolvers(domain)
+    for (const resolver of resolvers) {
+      try {
+        return await resolver.resolveTxt(domain)
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException)?.code
+        if (code === 'ENOTFOUND' || code === 'ENODATA' || code === 'NXDOMAIN') {
+          this.log.debug(`resolveTxt no data for ${domain} via resolver`, error)
+          return []
+        }
+        this.log.debug(`resolveTxt failed for ${domain} via resolver`, error)
+      }
     }
+    return []
+  }
+
+  private async getResolvers(domain: string): Promise<Array<typeof dns | dns.Resolver>> {
+    const resolvers: Array<typeof dns | dns.Resolver> = []
+
+    const authoritative = await this.createAuthoritativeResolver(domain)
+    if (authoritative) {
+      resolvers.push(authoritative)
+    }
+
+    resolvers.push(dns)
+    return resolvers
+  }
+
+  private async createAuthoritativeResolver(domain: string): Promise<dns.Resolver | null> {
+    try {
+      const nameServers = await dns.resolveNs(domain)
+      if (nameServers.length === 0) {
+        return null
+      }
+      const resolver = new dns.Resolver()
+      resolver.setServers(nameServers)
+      return resolver
+    } catch (error) {
+      this.log.debug(`resolveNs failed for ${domain}`, error)
+      return null
+    }
+  }
+
+  private txtContainsToken(records: string[][], token: string): boolean {
+    return records.some((entries) => entries.some((txt) => txt.includes(token)))
   }
 
   private matchesBaseDomain(target: string, baseDomain: string): boolean {

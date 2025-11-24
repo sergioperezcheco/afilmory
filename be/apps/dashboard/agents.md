@@ -194,7 +194,7 @@ export const Component = () => {
 
 UI Design Guidelines:
 
-This dashboard follows a **linear design language** with clean lines and subtle gradients. The design emphasizes simplicity and clarity without rounded corners or heavy visual effects.
+This dashboard uses a **linear, data-first admin aesthetic**: crisp container edges, subtle gradient dividers, neutral backgrounds, and minimal ornamentation. Keep page frames sharp while allowing gentle rounding on interactive elements; avoid glassmorphism, blobs, and heavy shadows.
 
 Core Design Principles:
 

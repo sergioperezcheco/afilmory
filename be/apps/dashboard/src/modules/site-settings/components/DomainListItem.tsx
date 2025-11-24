@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { LinearBorderPanel } from '~/components/common/LinearBorderPanel'
+import { resolveBaseDomain } from '~/modules/auth/utils/domain'
 
 import type { TenantDomain } from '../types'
 import { DomainBadge } from './DomainBadge'
@@ -17,6 +18,9 @@ interface DomainListItemProps {
 
 export function DomainListItem({ domain, onVerify, onDelete, isVerifying, isDeleting }: DomainListItemProps) {
   const { t } = useTranslation()
+  const baseDomain = resolveBaseDomain(typeof window !== 'undefined' ? window.location.host : '')
+  const txtName = `_afilmory-verification.${domain.domain}`
+  const verificationToken = domain.verificationToken ?? '—'
 
   return (
     <LinearBorderPanel className="bg-background p-4 transition-all duration-200 hover:bg-fill/30">
@@ -49,20 +53,82 @@ export function DomainListItem({ domain, onVerify, onDelete, isVerifying, isDele
         </div>
         {domain.status === 'pending' ? (
           <LinearBorderPanel className="bg-fill/50 p-3">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-                {t('settings.domain.token.label')}
+                {t('settings.domain.dns.txt.title')}
               </p>
-              <code className="block w-full rounded-lg bg-background border border-fill-tertiary px-3 py-2 text-xs font-mono text-text break-all">
-                {domain.verificationToken}
-              </code>
+              <div className="space-y-2 rounded-lg border border-fill bg-background p-3">
+                <KeyValueRow label={t('settings.domain.dns.type')} value="TXT" />
+                <KeyValueRow label={t('settings.domain.dns.name')} value={txtName} copyable monospace />
+                <KeyValueRow
+                  label={t('settings.domain.dns.value')}
+                  value={verificationToken}
+                  monospace
+                  copyable
+                  copyLabel={t('settings.domain.actions.copy')}
+                />
+                <KeyValueRow label={t('settings.domain.dns.ttl')} value={t('settings.domain.dns.hint.ttl')} />
+              </div>
               <FormHelperText className="text-xs text-text-tertiary">
                 {t('settings.domain.token.helper')}
               </FormHelperText>
+
+              <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">
+                {t('settings.domain.dns.cname.title')}
+              </p>
+              <div className="space-y-2 rounded-lg border border-fill bg-background p-3">
+                <KeyValueRow label={t('settings.domain.dns.type')} value="CNAME" />
+                <KeyValueRow label={t('settings.domain.dns.name')} value={domain.domain} copyable monospace />
+                <KeyValueRow label={t('settings.domain.dns.value')} value={baseDomain} copyable monospace />
+                <FormHelperText className="text-xs text-text-tertiary">
+                  {t('settings.domain.dns.cname.helper')}
+                </FormHelperText>
+              </div>
             </div>
           </LinearBorderPanel>
         ) : null}
       </div>
     </LinearBorderPanel>
+  )
+}
+
+function KeyValueRow({
+  label,
+  value,
+  monospace,
+  copyable,
+  copyLabel,
+}: {
+  label: string
+  value: string
+  monospace?: boolean
+  copyable?: boolean
+  copyLabel?: string
+}) {
+  const common = 'text-sm text-text'
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-28 shrink-0 text-xs uppercase tracking-wide text-text-tertiary">{label}</span>
+      <div className="flex-1 truncate">
+        <span className={monospace ? `${common} font-mono break-all` : common}>{value}</span>
+      </div>
+      {copyable ? <CopyButton value={value} label={copyLabel} /> : null}
+    </div>
+  )
+}
+
+function CopyButton({ value, label = 'Copy' }: { value: string; label?: string }) {
+  return (
+    <Button
+      variant="text"
+      size="xs"
+      onClick={() => {
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          navigator.clipboard.writeText(value)
+        }
+      }}
+    >
+      {label}
+    </Button>
   )
 }

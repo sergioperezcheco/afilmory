@@ -28,13 +28,13 @@ function normalizeHostname(): string {
 function buildVerificationInstructions(normalizedBase = 'your-domain.com') {
   return [
     {
+      titleKey: 'settings.domain.steps.txt.title',
+      descriptionKey: 'settings.domain.steps.txt.desc',
+    },
+    {
       titleKey: 'settings.domain.steps.cname.title',
       descriptionKey: 'settings.domain.steps.cname.desc',
       meta: normalizedBase,
-    },
-    {
-      titleKey: 'settings.domain.steps.txt.title',
-      descriptionKey: 'settings.domain.steps.txt.desc',
     },
     {
       titleKey: 'settings.domain.steps.verify.title',

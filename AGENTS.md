@@ -76,7 +76,7 @@ The project is divided into four main applications:
         *   **SSR for Shared Pages**: Server-renders specific pages to provide fast initial load times.
 
 - **`be/apps/core`**: The complete backend server (Hono) for real-time data. For a detailed breakdown of its architecture, see `be/apps/core/AGENTS.md`.
-- **`be/apps/dashboard`**: The administration panel for the backend. See `be/apps/dashboard/AGENTS.md` for UI guidelines.
+- **`be/apps/dashboard`**: The administration panel for the backend, using a linear, data-first admin aesthetic (crisp frames, subtle gradients). See `be/apps/dashboard/AGENTS.md` for full UI guidelines.
 
 ### Monorepo Structure
 
@@ -85,7 +85,7 @@ This is a pnpm workspace with multiple applications and packages:
 - `apps/web/` - Main frontend React application (Vite + React 19 SPA).
 - `apps/ssr/` - Next.js 15 application serving as an SPA host and dynamic SEO/OG generator.
 - `be/apps/core/` - The complete backend server (Hono) for real-time data.
-- `be/apps/dashboard/` - The administration panel for the backend.
+- `be/apps/dashboard/` - The administration panel for the backend (linear, data-first admin look).
 - `packages/builder/` - Photo processing and manifest generation tool.
 - `packages/webgl-viewer/` - High-performance WebGL-based photo viewer component.
 - `packages/data/` - Shared data access layer and PhotoLoader singleton.
@@ -216,7 +216,7 @@ class PhotoLoader {
 This project contains multiple web applications with distinct design systems. For specific UI and design guidelines, please refer to the `AGENTS.md` file within each application's directory:
 
 - **`apps/web`**: Contains the "Glassmorphic Depth Design System" for the main user-facing photo gallery. See `apps/web/AGENTS.md` for details.
-- **`be/apps/dashboard`**: Contains guidelines for the functional, data-driven UI of the administration panel. See `be/apps/dashboard/AGENTS.md` for details.
+- **`be/apps/dashboard`**: Contains guidelines for the functional, data-driven UI of the administration panel (linear, data-first aesthetic). See `be/apps/dashboard/AGENTS.md` for details.
 
 ## IMPORTANT
 
