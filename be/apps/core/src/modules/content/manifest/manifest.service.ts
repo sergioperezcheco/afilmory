@@ -1,13 +1,21 @@
 import type { AfilmoryManifest, CameraInfo, LensInfo, PhotoManifestItem } from '@afilmory/builder'
 import { CURRENT_PHOTO_MANIFEST_VERSION, photoAssets } from '@afilmory/db'
+import { APP_GLOBAL_PREFIX } from 'core/app.constants'
 import { DbAccessor } from 'core/database/database.provider'
+import { normalizedBoolean } from 'core/helpers/normalize.helper'
+import { SettingService } from 'core/modules/configuration/setting/setting.service'
+import { SystemSettingService } from 'core/modules/configuration/system-setting/system-setting.service'
 import { requireTenantContext } from 'core/modules/platform/tenant/tenant.context'
 import { and, eq, inArray } from 'drizzle-orm'
 import { injectable } from 'tsyringe'
 
 @injectable()
 export class ManifestService {
-  constructor(private readonly dbAccessor: DbAccessor) {}
+  constructor(
+    private readonly dbAccessor: DbAccessor,
+    private readonly settingService: SettingService,
+    private readonly systemSettingService: SystemSettingService,
+  ) {}
 
   async getManifest(): Promise<AfilmoryManifest> {
     const tenant = requireTenantContext()
@@ -29,13 +37,24 @@ export class ManifestService {
       }
     }
 
+    const secureAccessEnabled = await this.isSecureAccessEnabled(tenant.tenant.id)
     const items: PhotoManifestItem[] = []
 
     for (const record of records) {
       const item = record.manifest?.data
-      if (item) {
-        items.push(item)
+      if (!item) {
+        continue
       }
+      const normalized = structuredClone(item)
+      if (secureAccessEnabled) {
+        if (normalized.s3Key) {
+          normalized.originalUrl = this.createProxyUrl(normalized.s3Key)
+        }
+        if (normalized.video?.type === 'live-photo' && normalized.video.s3Key) {
+          normalized.video.videoUrl = this.createProxyUrl(normalized.video.s3Key, 'live-video')
+        }
+      }
+      items.push(normalized)
     }
 
     const sorted = this.sortByDateDesc(items)
@@ -119,5 +138,23 @@ export class ManifestService {
     }
 
     return Array.from(lensMap.values()).sort((a, b) => a.displayName.localeCompare(b.displayName))
+  }
+
+  private async isSecureAccessEnabled(tenantId: string): Promise<boolean> {
+    const activeProvider = await this.settingService.get('builder.storage.activeProvider', { tenantId })
+    if (activeProvider?.trim() === 'managed') {
+      return await this.systemSettingService.isManagedStorageSecureAccessEnabled()
+    }
+    const value = await this.settingService.get('photo.storage.secureAccess', { tenantId })
+    return normalizedBoolean(value ?? 'false')
+  }
+
+  private createProxyUrl(storageKey: string, intent = 'photo'): string {
+    const params = new URLSearchParams()
+    params.set('objectKey', storageKey)
+    if (intent) {
+      params.set('intent', intent)
+    }
+    return `${APP_GLOBAL_PREFIX}/storage/sign?${params.toString()}`
   }
 }

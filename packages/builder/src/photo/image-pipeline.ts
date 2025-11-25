@@ -209,8 +209,10 @@ export async function executePhotoProcessingPipeline(
 
     // 10. 构建照片清单项
     const aspectRatio = metadata.width / metadata.height
+    const extension = path.extname(photoKey).slice(1).toUpperCase()
     const photoItem: PhotoManifestItem = {
       id: photoId,
+      format: extension || 'UNKNOWN',
       title: photoInfo.title,
       description: photoInfo.description,
       dateTaken: photoInfo.dateTaken,

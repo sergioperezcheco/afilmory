@@ -1,5 +1,17 @@
 import type { PhotoManifestItem } from '@afilmory/builder'
-import { bigint, boolean, index, integer, jsonb, pgEnum, pgTable, text, timestamp, unique } from 'drizzle-orm/pg-core'
+import {
+  bigint,
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  unique,
+} from 'drizzle-orm/pg-core'
 
 import { generateId } from './snowflake'
 
@@ -292,6 +304,58 @@ export const photoAssets = pgTable(
   ],
 )
 
+export const photoAccessLogs = pgTable(
+  'photo_access_log',
+  {
+    id: snowflakeId,
+    tenantId: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    photoAssetId: text('photo_asset_id')
+      .notNull()
+      .references(() => photoAssets.id, { onDelete: 'cascade' }),
+    photoId: text('photo_id').notNull(),
+    storageKey: text('storage_key').notNull(),
+    provider: text('provider').notNull(),
+    intent: text('intent').notNull().default('original'),
+    tokenId: text('token_id').notNull(),
+    signedUrl: text('signed_url').notNull(),
+    status: text('status').notNull().default('issued'),
+    clientIp: text('client_ip'),
+    userAgent: text('user_agent'),
+    referer: text('referer'),
+    expiresAt: timestamp('expires_at', { mode: 'string' }),
+    createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_photo_access_log_tenant').on(t.tenantId),
+    index('idx_photo_access_log_asset').on(t.photoAssetId),
+    index('idx_photo_access_log_token').on(t.tokenId),
+  ],
+)
+
+export const photoAccessStats = pgTable(
+  'photo_access_stat',
+  {
+    tenantId: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    photoAssetId: text('photo_asset_id')
+      .notNull()
+      .references(() => photoAssets.id, { onDelete: 'cascade' }),
+    photoId: text('photo_id').notNull(),
+    viewCount: bigint('view_count', { mode: 'number' }).notNull().default(0),
+    lastViewedAt: timestamp('last_viewed_at', { mode: 'string' }),
+    createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow().notNull(),
+  },
+  (t) => [
+    primaryKey({ name: 'pk_photo_access_stat', columns: [t.tenantId, t.photoAssetId] }),
+    index('idx_photo_access_stat_photo').on(t.tenantId, t.photoId),
+  ],
+)
+
 export const photoSyncRuns = pgTable(
   'photo_sync_run',
   {
@@ -348,6 +412,8 @@ export const dbSchema = {
   managedStorageUsages,
   managedStorageFileReferences,
   photoAssets,
+  photoAccessLogs,
+  photoAccessStats,
   photoSyncRuns,
   billingUsageEvents,
 }

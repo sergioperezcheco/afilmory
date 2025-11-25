@@ -103,7 +103,7 @@ importers:
         version: 9.39.1(jiti@2.6.1)
       eslint-config-hyoban:
         specifier: 4.0.10
-        version: 4.0.10(@types/estree@1.0.8)(@typescript-eslint/eslint-plugin@8.46.4(@typescript-eslint/parser@8.46.4(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(@typescript-eslint/utils@8.46.4(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint@9.39.1(jiti@2.6.1))(tailwindcss@4.1.17)(ts-api-utils@2.1.0(typescript@5.9.3))(typescript@5.9.3)
+        version: 4.0.10(@types/estree@1.0.8)(@typescript-eslint/eslint-plugin@8.46.4(@typescript-eslint/parser@8.46.2(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(@typescript-eslint/utils@8.46.4(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint@9.39.1(jiti@2.6.1))(tailwindcss@4.1.17)(ts-api-utils@2.1.0(typescript@5.9.3))(typescript@5.9.3)
       fast-glob:
         specifier: 3.3.3
         version: 3.3.3
@@ -462,7 +462,7 @@ importers:
         version: 9.39.1(jiti@2.6.1)
       eslint-config-hyoban:
         specifier: 4.0.10
-        version: 4.0.10(@types/estree@1.0.8)(@typescript-eslint/eslint-plugin@8.46.4(@typescript-eslint/parser@8.46.2(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(@typescript-eslint/utils@8.46.4(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint@9.39.1(jiti@2.6.1))(tailwindcss@4.1.17)(ts-api-utils@2.1.0(typescript@5.9.3))(typescript@5.9.3)
+        version: 4.0.10(@types/estree@1.0.8)(@typescript-eslint/eslint-plugin@8.46.4(@typescript-eslint/parser@8.46.4(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(@typescript-eslint/utils@8.46.4(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint@9.39.1(jiti@2.6.1))(tailwindcss@4.1.17)(ts-api-utils@2.1.0(typescript@5.9.3))(typescript@5.9.3)
       husky:
         specifier: 9.1.7
         version: 9.1.7
@@ -949,6 +949,9 @@ importers:
       '@afilmory/utils':
         specifier: workspace:*
         version: link:../../../packages/utils
+      '@aws-crypto/sha256-js':
+        specifier: 5.2.0
+        version: 5.2.0
       '@aws-sdk/client-s3':
         specifier: 3.929.0
         version: 3.929.0
@@ -961,6 +964,12 @@ importers:
       '@resvg/resvg-js':
         specifier: 2.6.2
         version: 2.6.2
+      '@smithy/protocol-http':
+        specifier: 5.3.5
+        version: 5.3.5
+      '@smithy/signature-v4':
+        specifier: 5.3.5
+        version: 5.3.5
       '@types/busboy':
         specifier: 1.5.4
         version: 1.5.4

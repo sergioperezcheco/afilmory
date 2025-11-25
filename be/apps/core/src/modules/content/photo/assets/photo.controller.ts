@@ -20,6 +20,7 @@ import { createProgressSseResponse } from 'core/modules/shared/http/sse'
 import type { Context } from 'hono'
 import { inject } from 'tsyringe'
 
+import { StorageAccessService } from '../access/storage-access.service'
 import { UpdatePhotoTagsDto } from './photo-asset.dto'
 import { PhotoAssetService } from './photo-asset.service'
 import type { PhotoAssetListItem, PhotoAssetSummary } from './photo-asset.types'
@@ -34,7 +35,10 @@ type DeleteAssetsDto = {
 @Controller('photos')
 @Roles('admin')
 export class PhotoController {
-  constructor(@inject(PhotoAssetService) private readonly photoAssetService: PhotoAssetService) {}
+  constructor(
+    @inject(PhotoAssetService) private readonly photoAssetService: PhotoAssetService,
+    @inject(StorageAccessService) private readonly storageAccessService: StorageAccessService,
+  ) {}
   private readonly logger = createLogger(this.constructor.name)
 
   @Get('assets')
@@ -94,14 +98,25 @@ export class PhotoController {
   }
 
   @Get('storage-url')
-  async getStorageUrl(@Query() query: { key?: string }) {
+  async getStorageUrl(@Query() query: { key?: string; ttl?: string; intent?: string }) {
     const key = query?.key?.trim()
     if (!key) {
       throw new BizException(ErrorCode.COMMON_BAD_REQUEST, { message: '缺少 storage key 参数' })
     }
 
-    const url = await this.photoAssetService.generatePublicUrl(key)
-    return { url }
+    const secureAccessEnabled = await this.storageAccessService.isSecureAccessEnabled()
+    if (!secureAccessEnabled) {
+      const url = await this.photoAssetService.generatePublicUrl(key)
+      return { url, expiresAt: null }
+    }
+
+    const ttlSeconds = Number.parseInt(query?.ttl ?? '', 10)
+    const { url, expiresAt } = await this.storageAccessService.issueSignedUrl({
+      storageKey: key,
+      intent: query?.intent?.trim() || 'dashboard',
+      ttlSeconds: Number.isFinite(ttlSeconds) ? ttlSeconds : undefined,
+    })
+    return { url, expiresAt }
   }
 
   @Patch('assets/:id/tags')

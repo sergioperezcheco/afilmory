@@ -13,6 +13,7 @@ export type SuperAdminSettingsWithStorage = SuperAdminSettings & {
   storagePlanProducts?: Record<string, unknown>
   managedStorageProvider?: string | null
   managedStorageProviders?: StorageProvider[]
+  managedStorageSecureAccess?: boolean
 }
 
 export interface SuperAdminStats {
@@ -41,6 +42,7 @@ export type UpdateSuperAdminSettingsPayload = Partial<{
   storagePlanCatalog: Record<string, unknown>
   storagePlanPricing: Record<string, unknown>
   storagePlanProducts: Record<string, unknown>
+  managedStorageSecureAccess: boolean
 }>
 
 export type BuilderDebugProgressEvent =

@@ -4,6 +4,7 @@ import { authAccounts, authSessions, authUsers, generateId } from '@afilmory/db'
 import { env } from '@afilmory/env'
 import { eq } from 'drizzle-orm'
 
+import { APP_GLOBAL_PREFIX } from '../app.constants'
 import { createConfiguredApp } from '../app.factory'
 import { DbAccessor, PgPoolProvider } from '../database/database.provider'
 import { logger } from '../helpers/logger.helper'
@@ -93,7 +94,7 @@ function generateRandomPassword(): string {
 
 export async function handleResetSuperAdminPassword(options: ResetCliOptions): Promise<void> {
   const app = await createConfiguredApp({
-    globalPrefix: '/api',
+    globalPrefix: APP_GLOBAL_PREFIX,
   })
 
   const container = app.getContainer()

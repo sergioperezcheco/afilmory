@@ -8,7 +8,11 @@ import { DeleteSettingDto, GetSettingDto, SetSettingDto } from '../setting/setti
 import type { SettingEntryInput } from '../setting/setting.service'
 import { StorageSettingService } from './storage-setting.service'
 
-const STORAGE_SETTING_KEYS = ['builder.storage.providers', 'builder.storage.activeProvider'] as const
+const STORAGE_SETTING_KEYS = [
+  'builder.storage.providers',
+  'builder.storage.activeProvider',
+  'photo.storage.secureAccess',
+] as const
 type StorageSettingKey = (typeof STORAGE_SETTING_KEYS)[number]
 
 @Controller('storage/settings')
@@ -75,7 +79,7 @@ export class StorageSettingController {
   }
 
   private ensureKeyAllowed(key: string) {
-    if (!key.startsWith('builder.storage.')) {
+    if (!STORAGE_SETTING_KEYS.includes(key as StorageSettingKey)) {
       throw new BizException(ErrorCode.COMMON_BAD_REQUEST, { message: 'Only storage settings are available' })
     }
   }

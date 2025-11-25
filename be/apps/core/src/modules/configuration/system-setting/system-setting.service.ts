@@ -171,6 +171,11 @@ export class SystemSettingService {
     const managedStorageProviders = this.parseManagedStorageProviders(
       rawValues[SYSTEM_SETTING_DEFINITIONS.managedStorageProviders.key],
     )
+    const managedStorageSecureAccess = this.parseSetting(
+      rawValues[SYSTEM_SETTING_DEFINITIONS.managedStorageSecureAccess.key],
+      SYSTEM_SETTING_DEFINITIONS.managedStorageSecureAccess.schema,
+      SYSTEM_SETTING_DEFINITIONS.managedStorageSecureAccess.defaultValue,
+    )
     return {
       allowRegistration,
       maxRegistrableUsers,
@@ -192,6 +197,7 @@ export class SystemSettingService {
       storagePlanPricing,
       managedStorageProvider,
       managedStorageProviders,
+      managedStorageSecureAccess,
     }
   }
 
@@ -218,6 +224,11 @@ export class SystemSettingService {
   async getStoragePlanProducts(): Promise<StoragePlanProductConfigs> {
     const settings = await this.getSettings()
     return settings.storagePlanProducts ?? {}
+  }
+
+  async isManagedStorageSecureAccessEnabled(): Promise<boolean> {
+    const settings = await this.getSettings()
+    return settings.managedStorageSecureAccess ?? false
   }
 
   async getStoragePlanPricing(): Promise<StoragePlanPricingConfigs> {
@@ -329,6 +340,13 @@ export class SystemSettingService {
       } else if (sanitized !== current.baseDomain) {
         enqueueUpdate('baseDomain', sanitized)
       }
+    }
+
+    if (
+      patch.managedStorageSecureAccess !== undefined &&
+      patch.managedStorageSecureAccess !== current.managedStorageSecureAccess
+    ) {
+      enqueueUpdate('managedStorageSecureAccess', patch.managedStorageSecureAccess)
     }
     if (patch.oauthGatewayUrl !== undefined) {
       const sanitized = this.normalizeGatewayUrl(patch.oauthGatewayUrl)

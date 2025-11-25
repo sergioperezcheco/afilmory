@@ -58,6 +58,7 @@ export interface ImageMetadata {
 export interface PhotoManifestItem extends PhotoInfo {
   id: string
   originalUrl: string
+  format: string
   thumbnailUrl: string
   thumbHash: string | null
   width: number

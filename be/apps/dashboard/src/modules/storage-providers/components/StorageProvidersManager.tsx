@@ -1,4 +1,4 @@
-import { Button, Modal, Prompt } from '@afilmory/ui'
+import { Button, Modal, Prompt, Switch } from '@afilmory/ui'
 import { Spring } from '@afilmory/utils'
 import { DynamicIcon } from 'lucide-react/dynamic'
 import { m } from 'motion/react'
@@ -13,7 +13,12 @@ import { useBlock } from '~/hooks/useBlock'
 import { useManagedStoragePlansQuery } from '~/modules/storage-plans'
 
 import { MANAGED_STORAGE_ACTIVE_ID, storageProvidersI18nKeys } from '../constants'
-import { useStorageProviderSchemaQuery, useStorageProvidersQuery, useUpdateStorageProvidersMutation } from '../hooks'
+import {
+  useStorageProviderSchemaQuery,
+  useStorageProvidersQuery,
+  useUpdateStorageProvidersMutation,
+  useUpdateStorageSecureAccessMutation,
+} from '../hooks'
 import type { StorageProvider } from '../types'
 import { createEmptyProvider } from '../utils'
 import { ManagedStorageEntryCard } from './ManagedStorageEntryCard'
@@ -35,6 +40,7 @@ export function StorageProvidersManager() {
     error: schemaError,
   } = useStorageProviderSchemaQuery()
   const updateMutation = useUpdateStorageProvidersMutation()
+  const secureAccessMutation = useUpdateStorageSecureAccessMutation()
   const managedPlansQuery = useManagedStoragePlansQuery()
   const { setHeaderActionState } = useMainPageLayout()
   const navigate = useNavigate()
@@ -50,6 +56,7 @@ export function StorageProvidersManager() {
 
   const [providers, setProviders] = useState<StorageProvider[]>([])
   const [activeProviderId, setActiveProviderId] = useState<string | null>(null)
+  const [secureAccessEnabled, setSecureAccessEnabled] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
   const initialProviderStateRef = useRef<boolean | null>(null)
   const hasShownSyncPromptRef = useRef(false)
@@ -73,6 +80,7 @@ export function StorageProvidersManager() {
     startTransition(() => {
       setProviders(initialProviders)
       setActiveProviderId(activeId)
+      setSecureAccessEnabled(data.secureAccessEnabled ?? false)
       setIsDirty(false)
     })
   }, [data])
@@ -157,6 +165,7 @@ export function StorageProvidersManager() {
       {
         providers,
         activeProviderId: resolvedActiveId,
+        secureAccessEnabled,
       },
       {
         onSuccess: () => {
@@ -180,6 +189,19 @@ export function StorageProvidersManager() {
         },
       },
     )
+  }
+
+  const handleSecureAccessToggle = (nextValue: boolean) => {
+    if (managedActive) {
+      return
+    }
+    const previous = secureAccessEnabled
+    setSecureAccessEnabled(nextValue)
+    secureAccessMutation.mutate(nextValue, {
+      onError: () => {
+        setSecureAccessEnabled(previous)
+      },
+    })
   }
 
   const disableSave =
@@ -316,7 +338,7 @@ export function StorageProvidersManager() {
         )}
       </m.div>
 
-      {/* Security Notice */}
+      {/* Security & Controls */}
       <m.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -342,6 +364,41 @@ export function StorageProvidersManager() {
               <p className="text-text-tertiary text-[11px] sm:text-xs">
                 {t(storageProvidersI18nKeys.security.helper, { algorithm: 'AES-256-GCM' })}
               </p>
+            </div>
+          </div>
+        </LinearBorderPanel>
+      </m.div>
+
+      <m.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={Spring.presets.smooth}
+        className="mb-6"
+      >
+        <LinearBorderPanel className="bg-background-secondary/40 p-4 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1.5">
+              <p className="text-text text-sm font-semibold sm:text-base">
+                {t(storageProvidersI18nKeys.secureAccess.title)}
+              </p>
+              <p className="text-text-secondary text-xs leading-relaxed sm:text-sm">
+                {t(storageProvidersI18nKeys.secureAccess.description)}
+              </p>
+              <p className="text-text-tertiary text-[11px] sm:text-xs">
+                {t(storageProvidersI18nKeys.secureAccess.helper)}
+              </p>
+              {managedActive ? (
+                <p className="text-warning text-[11px] sm:text-xs">
+                  {t(storageProvidersI18nKeys.secureAccess.managedNote)}
+                </p>
+              ) : null}
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={secureAccessEnabled}
+                onCheckedChange={handleSecureAccessToggle}
+                disabled={managedActive || updateMutation.isPending || secureAccessMutation.isPending}
+              />
             </div>
           </div>
         </LinearBorderPanel>

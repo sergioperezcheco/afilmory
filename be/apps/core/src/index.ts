@@ -5,6 +5,7 @@ import { env } from '@afilmory/env'
 import { serve } from '@hono/node-server'
 import { green } from 'picocolors'
 
+import { APP_GLOBAL_PREFIX } from './app.constants'
 import { createConfiguredApp } from './app.factory'
 import { runCliPipeline } from './cli'
 import { logger } from './helpers/logger.helper'
@@ -14,7 +15,7 @@ process.title = 'afilmory core'
 
 async function bootstrap() {
   const app = await createConfiguredApp({
-    globalPrefix: '/api',
+    globalPrefix: APP_GLOBAL_PREFIX,
   })
 
   const hono = app.getInstance()

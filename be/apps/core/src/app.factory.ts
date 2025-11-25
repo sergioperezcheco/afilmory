@@ -15,7 +15,7 @@ import { registerOpenApiRoutes } from './openapi'
 import { RedisProvider } from './redis/redis.provider'
 
 export interface BootstrapOptions {
-  globalPrefix?: string
+  globalPrefix: string
 }
 
 const isDevelopment = env.NODE_ENV !== 'production'
@@ -31,13 +31,13 @@ const GlobalValidationPipe = createZodValidationPipe({
 
 const honoErrorLogger = createLogger('HonoErrorHandler')
 
-export async function createConfiguredApp(options: BootstrapOptions = {}): Promise<HonoHttpApplication> {
+export async function createConfiguredApp(options: BootstrapOptions): Promise<HonoHttpApplication> {
   const hono = new Hono()
-  registerOpenApiRoutes(hono, { globalPrefix: options.globalPrefix ?? '/api' })
+  registerOpenApiRoutes(hono, { globalPrefix: options.globalPrefix })
   const app = await createApplication(
     AppModules,
     {
-      globalPrefix: options.globalPrefix ?? '/api',
+      globalPrefix: options.globalPrefix,
     },
     hono,
   )

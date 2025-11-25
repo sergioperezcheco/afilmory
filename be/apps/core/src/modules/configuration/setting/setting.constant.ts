@@ -72,6 +72,14 @@ export const DEFAULT_SETTING_DEFINITIONS = {
     isSensitive: false,
     schema: z.string().transform((value) => value.trim()),
   },
+  'photo.storage.secureAccess': {
+    isSensitive: false,
+    schema: z
+      .string()
+      .trim()
+      .transform((value) => (value.length === 0 ? 'false' : value.toLowerCase()))
+      .pipe(z.enum(['true', 'false'])),
+  },
   [BUILDER_SYSTEM_CONFIG_SETTING_KEY]: {
     isSensitive: false,
     schema: z.string().trim(),

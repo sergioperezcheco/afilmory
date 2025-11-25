@@ -68,6 +68,7 @@ const updateSuperAdminSettingsSchema = z
     storagePlanProducts: z.record(z.string(), z.any()).optional(),
     managedStorageProvider: z.string().trim().min(1).nullable().optional(),
     managedStorageProviders: z.array(storageProviderSchema).optional(),
+    managedStorageSecureAccess: z.boolean().optional(),
     ...planQuotaFields,
     ...planPricingFields,
     ...planProductFields,

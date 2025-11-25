@@ -151,6 +151,12 @@ export const SYSTEM_SETTING_DEFINITIONS = {
     defaultValue: '[]',
     isSensitive: true,
   },
+  managedStorageSecureAccess: {
+    key: 'system.storage.managed.secureAccess',
+    schema: z.boolean(),
+    defaultValue: false,
+    isSensitive: false,
+  },
 } as const
 
 const BILLING_PLAN_QUOTA_KEYS = [

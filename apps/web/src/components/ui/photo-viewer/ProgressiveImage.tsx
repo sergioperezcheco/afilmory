@@ -1,7 +1,7 @@
 import { clsxm } from '@afilmory/utils'
 import { WebGLImageViewer } from '@afilmory/webgl-viewer'
 import { AnimatePresence, m } from 'motion/react'
-import { useCallback, useRef } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { useMediaQuery } from 'usehooks-ts'
@@ -70,9 +70,16 @@ export const ProgressiveImage = ({
   const domImageViewerRef = useRef<ReactZoomPanPinchRef>(null)
   const livePhotoRef = useRef<any>(null)
 
+  const resolvedSrc = useMemo(() => {
+    if (src.startsWith('/')) {
+      return new URL(src, window.location.origin).toString()
+    }
+    return src
+  }, [src])
+
   // Hooks
   const imageLoaderManagerRef = useImageLoader(
-    src,
+    resolvedSrc,
     isCurrentImage,
     highResLoaded,
     error,

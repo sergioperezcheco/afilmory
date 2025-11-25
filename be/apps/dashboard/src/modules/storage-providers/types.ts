@@ -12,6 +12,7 @@ export interface StorageProvider {
 export interface StorageProvidersPayload {
   providers: StorageProvider[]
   activeProviderId: string | null
+  secureAccessEnabled: boolean
 }
 
 export interface StorageSettingEntry {

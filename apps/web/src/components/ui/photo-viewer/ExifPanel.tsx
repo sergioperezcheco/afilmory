@@ -19,7 +19,6 @@ import {
   StreamlineImageAccessoriesLensesPhotosCameraShutterPicturePhotographyPicturesPhotoLens,
   TablerAperture,
 } from '~/icons'
-import { getImageFormat } from '~/lib/image-utils'
 import { convertExifGPSToDecimal } from '~/lib/map-utils'
 
 import { formatExifData, Row } from './formatExifData'
@@ -45,8 +44,6 @@ export const ExifPanel: FC<{
   const decimalLatitude = gpsData?.latitude || null
   const decimalLongitude = gpsData?.longitude || null
 
-  // 使用通用的图片格式提取函数
-  const imageFormat = getImageFormat(currentPhoto.originalUrl || currentPhoto.s3Key || '')
   const megaPixels = (((currentPhoto.height * currentPhoto.width) / 1000000) | 0).toString()
 
   return (
@@ -109,7 +106,7 @@ export const ExifPanel: FC<{
             <h4 className="mb-2 text-sm font-medium text-white/80">{t('exif.basic.info')}</h4>
             <div className="space-y-1 text-sm">
               <Row label={t('exif.filename')} value={currentPhoto.title} ellipsis={true} />
-              <Row label={t('exif.format')} value={imageFormat} />
+              <Row label={t('exif.format')} value={currentPhoto.format} />
               <Row label={t('exif.dimensions')} value={`${currentPhoto.width} × ${currentPhoto.height}`} />
               <Row label={t('exif.file.size')} value={`${(currentPhoto.size / 1024 / 1024).toFixed(1)}MB`} />
               {megaPixels && <Row label={t('exif.pixels')} value={`${megaPixels} MP`} />}

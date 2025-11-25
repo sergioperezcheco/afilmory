@@ -104,3 +104,13 @@ export function requireStringWithMessage(value: string | undefined | null, messa
   }
   return normalized
 }
+
+export function normalizedBoolean (value?: boolean | string | null): boolean {
+  if (typeof value === 'boolean') {
+    return value
+  }
+  if (typeof value === 'string') {
+    return value.trim().toLowerCase() === 'true'
+  }
+  return false
+}

@@ -5,7 +5,7 @@ import type { SettingEntryInput } from '../setting/setting.service'
 import { SettingService } from '../setting/setting.service'
 import { createStorageProviderFormSchema } from './storage-provider.ui-schema'
 
-type StorageSettingKey = 'builder.storage.providers' | 'builder.storage.activeProvider'
+type StorageSettingKey = 'builder.storage.providers' | 'builder.storage.activeProvider' | 'photo.storage.secureAccess'
 
 @injectable()
 export class StorageSettingService {

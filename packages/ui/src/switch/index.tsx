@@ -21,7 +21,7 @@ export function Switch({ className, ...props }: SwitchProps) {
       {...props}
     >
       <SwitchThumb
-        className="data-[state=checked]:bg-accent data-[state=unchecked]:bg-disabled-control aspect-square h-full rounded-full transition-colors duration-200"
+        className="data-[state=checked]:bg-accent data-[state=unchecked]:bg-background-quaternary aspect-square h-full rounded-full transition-colors duration-200"
         pressedAnimation={{ width: 22 }}
       />
     </SwitchAnimate>

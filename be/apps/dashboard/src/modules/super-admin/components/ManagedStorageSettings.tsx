@@ -1,4 +1,4 @@
-import { Button, Label, Modal } from '@afilmory/ui'
+import { Button, Label, Modal, Switch } from '@afilmory/ui'
 import { nanoid } from 'nanoid'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -8,10 +8,7 @@ import type { StorageProvider } from '~/modules/storage-providers'
 import { useStorageProviderSchemaQuery } from '~/modules/storage-providers'
 import { ProviderEditModal } from '~/modules/storage-providers/components/ProviderEditModal'
 import { storageProvidersI18nKeys } from '~/modules/storage-providers/constants'
-import {
-  createEmptyProvider,
-  normalizeStorageProviderConfig,
-} from '~/modules/storage-providers/utils'
+import { createEmptyProvider, normalizeStorageProviderConfig } from '~/modules/storage-providers/utils'
 
 import { useSuperAdminSettingsQuery, useUpdateSuperAdminSettingsMutation } from '../hooks'
 import type { UpdateSuperAdminSettingsPayload } from '../types'
@@ -54,6 +51,8 @@ export function ManagedStorageSettings() {
   const [providers, setProviders] = useState<StorageProvider[]>([])
   const [baselineProviders, setBaselineProviders] = useState<StorageProvider[]>([])
   const [managedId, setManagedId] = useState<string | null>(null)
+  const [managedSecureAccessEnabled, setManagedSecureAccessEnabled] = useState(false)
+  const [baselineManagedSecureAccessEnabled, setBaselineManagedSecureAccessEnabled] = useState(false)
 
   const settingsSource = useMemo(() => {
     const payload = settingsQuery.data
@@ -76,6 +75,10 @@ export function ManagedStorageSettings() {
     setBaselineProviders(nextProviders)
     const fallbackId = baselineManagedId ?? normalizeProviderId(nextProviders[0]?.id) ?? null
     setManagedId(fallbackId)
+    const secureAccessFlag =
+      typeof settingsSource.managedStorageSecureAccess === 'boolean' ? settingsSource.managedStorageSecureAccess : false
+    setManagedSecureAccessEnabled(secureAccessFlag)
+    setBaselineManagedSecureAccessEnabled(secureAccessFlag)
   }, [settingsSource, baselineManagedId])
 
   useEffect(() => {
@@ -94,7 +97,8 @@ export function ManagedStorageSettings() {
   )
   const normalizedManagedId = normalizeProviderId(managedId)
   const managedChanged = normalizedManagedId !== baselineManagedId
-  const canSave = (providersChanged || managedChanged) && !updateSettings.isPending
+  const secureAccessChanged = managedSecureAccessEnabled !== baselineManagedSecureAccessEnabled
+  const canSave = (providersChanged || managedChanged || secureAccessChanged) && !updateSettings.isPending
 
   const handleEdit = (provider: StorageProvider | null) => {
     const providerForm = schemaQuery.data
@@ -126,7 +130,7 @@ export function ManagedStorageSettings() {
   }
 
   const handleSave = () => {
-    if (!providersChanged && !managedChanged) {
+    if (!providersChanged && !managedChanged && !secureAccessChanged) {
       return
     }
 
@@ -136,6 +140,9 @@ export function ManagedStorageSettings() {
     }
     if (managedChanged) {
       payload.managedStorageProvider = normalizedManagedId
+    }
+    if (secureAccessChanged) {
+      payload.managedStorageSecureAccess = managedSecureAccessEnabled
     }
     updateSettings.mutate(payload)
   }
@@ -182,9 +189,9 @@ export function ManagedStorageSettings() {
       </div>
 
       {providers.length === 0 ? (
-        <p className="text-text-secondary text-sm">{t('superadmin.settings.managed-storage.empty')}</p>
+        <p className="text-text-secondary text-sm mt-4">{t('superadmin.settings.managed-storage.empty')}</p>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 mt-4">
           {providers.map((provider) => (
             <div
               key={provider.id}
@@ -224,6 +231,27 @@ export function ManagedStorageSettings() {
           ))}
         </div>
       )}
+
+      <div className="border-fill/60 bg-fill/5 mt-6 rounded-lg border p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-text text-sm font-semibold">
+              {t('superadmin.settings.managed-storage.secure-access.title')}
+            </p>
+            <p className="text-text-secondary text-xs">
+              {t('superadmin.settings.managed-storage.secure-access.description')}
+            </p>
+          </div>
+          <Switch
+            checked={managedSecureAccessEnabled}
+            onCheckedChange={(next) => setManagedSecureAccessEnabled(next)}
+            disabled={updateSettings.isPending}
+          />
+        </div>
+        <p className="text-text-tertiary text-[11px] mt-2">
+          {t('superadmin.settings.managed-storage.secure-access.helper')}
+        </p>
+      </div>
 
       <div className="flex items-center justify-end gap-3 my-4">
         <Button variant="secondary" disabled={!canSave} isLoading={updateSettings.isPending} onClick={handleSave}>

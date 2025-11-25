@@ -31,6 +31,7 @@ import { requireTenantContext } from 'core/modules/platform/tenant/tenant.contex
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { injectable } from 'tsyringe'
 
+import { StorageAccessService } from '../access/storage-access.service'
 import { PhotoBuilderService } from '../builder/photo-builder.service'
 import { PhotoStorageService } from '../storage/photo-storage.service'
 import { TransactionalStorageManager } from '../storage/transactional-storage.manager'
@@ -70,6 +71,7 @@ export class PhotoAssetService {
     private readonly dbAccessor: DbAccessor,
     private readonly photoBuilderService: PhotoBuilderService,
     private readonly photoStorageService: PhotoStorageService,
+    private readonly storageAccessService: StorageAccessService,
     private readonly billingPlanService: BillingPlanService,
     private readonly billingUsageService: BillingUsageService,
     private readonly storagePlanService: StoragePlanService,
@@ -96,17 +98,19 @@ export class PhotoAssetService {
 
     const { builderConfig, storageConfig } = await this.photoStorageService.resolveConfigForTenant(tenant.tenant.id)
     const storageManager = await this.createStorageManager(builderConfig, storageConfig)
+    const secureAccessEnabled = await this.storageAccessService.resolveSecureAccessPreference(
+      storageConfig,
+      tenant.tenant.id,
+    )
 
     return await Promise.all(
       records.map(async (record) => {
-        let publicUrl: string | null = null
-        if (record.storageProvider !== DATABASE_ONLY_PROVIDER) {
-          try {
-            publicUrl = await Promise.resolve(storageManager.generatePublicUrl(record.storageKey))
-          } catch {
-            publicUrl = null
-          }
-        }
+        const publicUrl = await this.resolvePublicUrlForRecord({
+          storageManager,
+          storageKey: record.storageKey,
+          storageProvider: record.storageProvider,
+          secureAccessEnabled,
+        })
 
         return {
           id: record.id,
@@ -302,6 +306,10 @@ export class PhotoAssetService {
     builder.setStorageManager(transactionalStorageManager)
     await builder.ensurePluginsReady()
     const storageManager = transactionalStorageManager
+    const secureAccessEnabled = await this.storageAccessService.resolveSecureAccessPreference(
+      storageConfig,
+      tenant.tenant.id,
+    )
     const { photoPlans, videoPlans } = this.prepareUploadPlans(inputs, storageConfig)
     const unmatchedVideoBaseNames = this.validateLivePhotoPairs(photoPlans, videoPlans)
 
@@ -350,7 +358,14 @@ export class PhotoAssetService {
         items: existingItemsRaw,
         keySet: existingPhotoKeySet,
         baseNameMap: existingBaseNameMap,
-      } = await this.collectExistingPhotoRecords(photoPlans, videoPlans, tenant.tenant.id, storageManager, db)
+      } = await this.collectExistingPhotoRecords(
+        photoPlans,
+        videoPlans,
+        tenant.tenant.id,
+        storageManager,
+        db,
+        secureAccessEnabled,
+      )
       throwIfAborted()
 
       const existingPhotoIds = await this.collectExistingPhotoIds(photoPlans, tenant.tenant.id, db)
@@ -495,6 +510,7 @@ export class PhotoAssetService {
         videoBufferMap,
         abortSignal: options?.abortSignal,
         builderLogEmitter,
+        secureAccessEnabled,
         onProcessed: async ({ storageObject, manifestItem }) => {
           throwIfAborted()
           processedCount += 1
@@ -687,6 +703,7 @@ export class PhotoAssetService {
     tenantId: string,
     storageManager: StorageManager,
     db: ReturnType<DbAccessor['get']>,
+    secureAccessEnabled: boolean,
   ): Promise<{
     items: PhotoAssetListItem[]
     keySet: Set<string>
@@ -735,14 +752,12 @@ export class PhotoAssetService {
     const records = [...recordMap.values()]
     const items = await Promise.all(
       records.map(async (record) => {
-        let publicUrl: string | null = null
-        if (record.storageProvider !== DATABASE_ONLY_PROVIDER) {
-          try {
-            publicUrl = await Promise.resolve(storageManager.generatePublicUrl(record.storageKey))
-          } catch {
-            publicUrl = null
-          }
-        }
+        const publicUrl = await this.resolvePublicUrlForRecord({
+          storageManager,
+          storageKey: record.storageKey,
+          storageProvider: record.storageProvider,
+          secureAccessEnabled,
+        })
 
         return {
           id: record.id,
@@ -912,6 +927,7 @@ export class PhotoAssetService {
     videoBufferMap: Map<string, Buffer>
     abortSignal?: AbortSignal
     builderLogEmitter?: DataSyncProgressEmitter
+    secureAccessEnabled: boolean
     onProcessed?: (payload: {
       plan: PreparedUploadPlan
       storageObject: StorageObject
@@ -931,6 +947,7 @@ export class PhotoAssetService {
       videoBufferMap,
       abortSignal,
       builderLogEmitter,
+      secureAccessEnabled,
       onProcessed,
     } = params
 
@@ -1063,7 +1080,12 @@ export class PhotoAssetService {
             .limit(1)
         )[0]
 
-      const publicUrl = await Promise.resolve(storageManager.generatePublicUrl(resolvedPhotoKey))
+      const publicUrl = await this.resolvePublicUrlForRecord({
+        storageManager,
+        storageKey: resolvedPhotoKey,
+        storageProvider: storageConfig.provider,
+        secureAccessEnabled,
+      })
 
       await this.recordManagedStorageReferences(storageConfig, tenantId, [
         {
@@ -1109,13 +1131,6 @@ export class PhotoAssetService {
     return results
   }
 
-  async generatePublicUrl(storageKey: string): Promise<string> {
-    const tenant = requireTenantContext()
-    const { builderConfig, storageConfig } = await this.photoStorageService.resolveConfigForTenant(tenant.tenant.id)
-    const storageManager = await this.createStorageManager(builderConfig, storageConfig)
-    return await Promise.resolve(storageManager.generatePublicUrl(storageKey))
-  }
-
   async updateAssetTags(assetId: string, tagsInput: readonly string[]): Promise<PhotoAssetListItem> {
     const tenant = requireTenantContext()
     const db = this.dbAccessor.get()
@@ -1146,6 +1161,10 @@ export class PhotoAssetService {
     const normalizedTags = this.normalizeTagList(tagsInput)
     const { builderConfig, storageConfig } = await this.photoStorageService.resolveConfigForTenant(tenant.tenant.id)
     const storageManager = await this.createStorageManager(builderConfig, storageConfig)
+    const secureAccessEnabled = await this.storageAccessService.resolveSecureAccessPreference(
+      storageConfig,
+      tenant.tenant.id,
+    )
 
     const sanitizeKey = this.normalizeKeyPath(record.storageKey)
     const normalizeStorageKey = createStorageKeyNormalizer(storageConfig)
@@ -1224,10 +1243,12 @@ export class PhotoAssetService {
       throw new BizException(ErrorCode.COMMON_INTERNAL_SERVER_ERROR, { message: '更新标签失败，请稍后再试' })
     }
 
-    const publicUrl =
-      saved.storageProvider === DATABASE_ONLY_PROVIDER
-        ? null
-        : await Promise.resolve(storageManager.generatePublicUrl(saved.storageKey))
+    const publicUrl = await this.resolvePublicUrlForRecord({
+      storageManager,
+      storageKey: saved.storageKey,
+      storageProvider: saved.storageProvider,
+      secureAccessEnabled,
+    })
 
     await this.emitManifestChanged(tenant.tenant.id)
 
@@ -1887,5 +1908,35 @@ export class PhotoAssetService {
       s3Key: moved.key ?? nextVideoKey,
       videoUrl,
     }
+  }
+
+  private async resolvePublicUrlForRecord(params: {
+    storageManager: StorageManager
+    storageKey: string
+    storageProvider: string
+    secureAccessEnabled: boolean
+    intent?: string
+  }): Promise<string | null> {
+    const { storageManager, storageKey, storageProvider, secureAccessEnabled, intent } = params
+    if (storageProvider === DATABASE_ONLY_PROVIDER) {
+      return null
+    }
+
+    if (secureAccessEnabled) {
+      return this.storageAccessService.createProxyUrl(storageKey, intent)
+    }
+
+    try {
+      return await Promise.resolve(storageManager.generatePublicUrl(storageKey))
+    } catch {
+      return null
+    }
+  }
+
+  async generatePublicUrl(storageKey: string): Promise<string> {
+    const tenant = requireTenantContext()
+    const { builderConfig, storageConfig } = await this.photoStorageService.resolveConfigForTenant(tenant.tenant.id)
+    const storageManager = await this.createStorageManager(builderConfig, storageConfig)
+    return await Promise.resolve(storageManager.generatePublicUrl(storageKey))
   }
 }
