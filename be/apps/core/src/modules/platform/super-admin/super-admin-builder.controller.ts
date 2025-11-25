@@ -18,6 +18,7 @@ import type { DataSyncProgressEmitter } from 'core/modules/infrastructure/data-s
 import { createProgressSseResponse } from 'core/modules/shared/http/sse'
 import type { Context } from 'hono'
 
+import { joinSegments, normalizeKeyPath } from '../../content/photo/access/storage-access.utils'
 import type { BuilderDebugProgressEvent, StorageResolution, UploadedDebugFile } from './InMemoryDebugStorageProvider'
 import { InMemoryDebugStorageProvider } from './InMemoryDebugStorageProvider'
 
@@ -203,11 +204,11 @@ export class SuperAdminBuilderDebugController {
     const ext = path.extname(filename)
     const safeExt = ext || '.jpg'
     const baseName = `${Date.now()}-${randomUUID()}`
-    return this.joinSegments(DEBUG_STORAGE_PREFIX, `${baseName}${safeExt}`)
+    return joinSegments(DEBUG_STORAGE_PREFIX, `${baseName}${safeExt}`)
   }
 
   private normalizeStorageObjectKey(object: StorageObject, fallbackKey: string): StorageObject {
-    const normalizedKey = this.normalizeKeyPath(object?.key ?? fallbackKey)
+    const normalizedKey = normalizeKeyPath(object?.key ?? fallbackKey)
     if (normalizedKey === object?.key) {
       return object
     }
@@ -215,22 +216,6 @@ export class SuperAdminBuilderDebugController {
       ...object,
       key: normalizedKey,
     }
-  }
-
-  private normalizeKeyPath(raw: string | undefined | null): string {
-    if (!raw) {
-      return ''
-    }
-    const segments = raw.split(/[\\/]+/)
-    const safeSegments: string[] = []
-    for (const segment of segments) {
-      const trimmed = segment.trim()
-      if (!trimmed || trimmed === '.' || trimmed === '..') {
-        continue
-      }
-      safeSegments.push(trimmed)
-    }
-    return safeSegments.join('/')
   }
 
   private async cleanupDebugArtifacts(storageManager: StorageManager, keys: Set<string>): Promise<boolean> {
@@ -256,27 +241,8 @@ export class SuperAdminBuilderDebugController {
       return null
     }
 
-    const remotePrefix = this.joinSegments(DEFAULT_THUMBNAIL_DIRECTORY)
+    const remotePrefix = joinSegments(DEFAULT_THUMBNAIL_DIRECTORY)
 
-    return this.joinSegments(remotePrefix, data.fileName)
-  }
-
-  private joinSegments(...segments: Array<string | null | undefined>): string {
-    const parts: string[] = []
-
-    for (const raw of segments) {
-      if (!raw) {
-        continue
-      }
-      const normalized = raw
-        .replaceAll('\\', '/')
-        .replaceAll(/^\/+|\/+$/g, '')
-        .trim()
-      if (normalized.length > 0) {
-        parts.push(normalized)
-      }
-    }
-
-    return parts.join('/')
+    return joinSegments(remotePrefix, data.fileName)
   }
 }

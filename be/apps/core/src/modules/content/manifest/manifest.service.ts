@@ -1,10 +1,9 @@
 import type { AfilmoryManifest, CameraInfo, LensInfo, PhotoManifestItem } from '@afilmory/builder'
 import { CURRENT_PHOTO_MANIFEST_VERSION, photoAssets } from '@afilmory/db'
-import { APP_GLOBAL_PREFIX } from 'core/app.constants'
 import { DbAccessor } from 'core/database/database.provider'
-import { normalizedBoolean } from 'core/helpers/normalize.helper'
-import { SettingService } from 'core/modules/configuration/setting/setting.service'
-import { SystemSettingService } from 'core/modules/configuration/system-setting/system-setting.service'
+import { StorageAccessService } from 'core/modules/content/photo/access/storage-access.service'
+import { createProxyUrl } from 'core/modules/content/photo/access/storage-access.utils'
+import { PhotoStorageService } from 'core/modules/content/photo/storage/photo-storage.service'
 import { requireTenantContext } from 'core/modules/platform/tenant/tenant.context'
 import { and, eq, inArray } from 'drizzle-orm'
 import { injectable } from 'tsyringe'
@@ -13,8 +12,8 @@ import { injectable } from 'tsyringe'
 export class ManifestService {
   constructor(
     private readonly dbAccessor: DbAccessor,
-    private readonly settingService: SettingService,
-    private readonly systemSettingService: SystemSettingService,
+    private readonly photoStorageService: PhotoStorageService,
+    private readonly storageAccessService: StorageAccessService,
   ) {}
 
   async getManifest(): Promise<AfilmoryManifest> {
@@ -24,6 +23,7 @@ export class ManifestService {
     const records = await db
       .select({
         manifest: photoAssets.manifest,
+        storageProvider: photoAssets.storageProvider,
       })
       .from(photoAssets)
       .where(and(eq(photoAssets.tenantId, tenant.tenant.id), inArray(photoAssets.syncStatus, ['synced', 'conflict'])))
@@ -37,7 +37,11 @@ export class ManifestService {
       }
     }
 
-    const secureAccessEnabled = await this.isSecureAccessEnabled(tenant.tenant.id)
+    const { storageConfig } = await this.photoStorageService.resolveConfigForTenant(tenant.tenant.id)
+    const secureAccessEnabled = await this.storageAccessService.resolveSecureAccessPreference(
+      storageConfig,
+      tenant.tenant.id,
+    )
     const items: PhotoManifestItem[] = []
 
     for (const record of records) {
@@ -46,12 +50,12 @@ export class ManifestService {
         continue
       }
       const normalized = structuredClone(item)
-      if (secureAccessEnabled) {
+      if (secureAccessEnabled && (record.storageProvider === 'managed' || record.storageProvider === 's3')) {
         if (normalized.s3Key) {
-          normalized.originalUrl = this.createProxyUrl(normalized.s3Key)
+          normalized.originalUrl = createProxyUrl(normalized.s3Key)
         }
         if (normalized.video?.type === 'live-photo' && normalized.video.s3Key) {
-          normalized.video.videoUrl = this.createProxyUrl(normalized.video.s3Key, 'live-video')
+          normalized.video.videoUrl = createProxyUrl(normalized.video.s3Key, 'live-video')
         }
       }
       items.push(normalized)
@@ -138,23 +142,5 @@ export class ManifestService {
     }
 
     return Array.from(lensMap.values()).sort((a, b) => a.displayName.localeCompare(b.displayName))
-  }
-
-  private async isSecureAccessEnabled(tenantId: string): Promise<boolean> {
-    const activeProvider = await this.settingService.get('builder.storage.activeProvider', { tenantId })
-    if (activeProvider?.trim() === 'managed') {
-      return await this.systemSettingService.isManagedStorageSecureAccessEnabled()
-    }
-    const value = await this.settingService.get('photo.storage.secureAccess', { tenantId })
-    return normalizedBoolean(value ?? 'false')
-  }
-
-  private createProxyUrl(storageKey: string, intent = 'photo'): string {
-    const params = new URLSearchParams()
-    params.set('objectKey', storageKey)
-    if (intent) {
-      params.set('intent', intent)
-    }
-    return `${APP_GLOBAL_PREFIX}/storage/sign?${params.toString()}`
   }
 }

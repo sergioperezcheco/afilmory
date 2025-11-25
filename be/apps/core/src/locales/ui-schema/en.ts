@@ -384,6 +384,8 @@ const enUiSchema = {
         s3: 'AWS S3 Compatible Object Storage',
         github: 'GitHub repository',
         b2: 'Backblaze B2 cloud storage',
+        cos: 'Tencent Cloud COS',
+        oss: 'Aliyun OSS',
       },
       fields: {
         s3: {

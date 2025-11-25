@@ -672,7 +672,7 @@
   "storage.providers.prompt.sync.description": "Storage provider configuration is saved. Go to Data Sync now to scan storage and update the database?",
   "storage.providers.prompt.sync.title": "Sync photos now?",
   "storage.providers.secure-access.description": "Serve downloads via short-lived, presigned URLs so you can revoke access and trace requests. Disable to fall back to direct bucket URLs (less secure).",
-  "storage.providers.secure-access.helper": "Recommended for managed storage or when you need detailed access logs. Requires S3/B2 credentials that allow presigned downloads.",
+  "storage.providers.secure-access.helper": "Recommended for managed storage or when you need detailed access logs. Requires S3 credentials that allow presigned downloads.",
   "storage.providers.secure-access.managed-note": "Managed tenants follow the platform-wide policy controlled by the super admin.",
   "storage.providers.secure-access.title": "Secure Access Proxy",
   "storage.providers.security.description": "Sensitive credentials (keys, tokens, etc.) are encrypted with {{algorithm}} to protect your data.",

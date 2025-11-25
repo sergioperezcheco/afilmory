@@ -35,7 +35,7 @@ export function createS3Client(config: S3CompatibleConfig): SimpleS3Client {
   const signer = new SigV4Signer({
     accessKeyId,
     secretAccessKey,
-    sessionToken: config.sessionToken,
+
     region,
     service: sigV4Service,
   })
@@ -179,7 +179,7 @@ class SigV4Signer {
     private readonly options: {
       accessKeyId: string
       secretAccessKey: string
-      sessionToken?: string
+
       region: string
       service: string
     },
@@ -201,9 +201,6 @@ class SigV4Signer {
     const dateStamp = amzDate.slice(0, 8)
 
     headers.set('x-amz-date', amzDate)
-    if (this.options.sessionToken) {
-      headers.set('x-amz-security-token', this.options.sessionToken)
-    }
 
     const canonicalRequest = this.buildCanonicalRequest(method, url, headers, payloadHash)
     const credentialScope = `${dateStamp}/${this.options.region}/${this.options.service}/aws4_request`

@@ -1,7 +1,7 @@
 import { authUsers } from '@afilmory/db'
 import { DbAccessor } from 'core/database/database.provider'
 import { BizException, ErrorCode } from 'core/errors'
-import { normalizeStringToUndefined } from 'core/helpers/normalize.helper'
+import { normalizeStringToUndefined, parseBoolean } from 'core/helpers/normalize.helper'
 import { requireTenantContext } from 'core/modules/platform/tenant/tenant.context'
 import { asc, eq, sql } from 'drizzle-orm'
 import { injectable } from 'tsyringe'
@@ -397,21 +397,6 @@ function parseJsonStringArray(value: string | null | undefined): string[] | unde
   }
 }
 
-function parseBooleanString(value: string | null | undefined): boolean | undefined {
-  const normalized = normalizeStringToUndefined(value)
-  if (!normalized) {
-    return undefined
-  }
-
-  if (normalized === 'true') {
-    return true
-  }
-  if (normalized === 'false') {
-    return false
-  }
-  return undefined
-}
-
 function buildSocialConfig(values: SiteSettingValueMap): SiteConfig['social'] | undefined {
   const social: NonNullable<SiteConfig['social']> = {}
 
@@ -423,7 +408,7 @@ function buildSocialConfig(values: SiteSettingValueMap): SiteConfig['social'] | 
     social.github = value
   })
 
-  const rss = parseBooleanString(values['site.social.rss'])
+  const rss = parseBoolean(values['site.social.rss'])
   if (typeof rss === 'boolean') {
     social.rss = rss
   }

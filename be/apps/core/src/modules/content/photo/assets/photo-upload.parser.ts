@@ -6,10 +6,9 @@ import { BizException, ErrorCode } from 'core/errors'
 import type { Context } from 'hono'
 import { injectable } from 'tsyringe'
 
+import { formatBytesForDisplay, normalizeDirectoryValue, normalizeRequestHeaders } from '../access/storage-access.utils'
 import type { UploadAssetInput } from './photo-asset.types'
 import { MAX_TEXT_FIELDS_PER_REQUEST, MAX_UPLOAD_FILES_PER_BATCH } from './photo-upload-limits'
-
-const BYTES_PER_MB = 1024 * 1024
 
 type MultipartParseOptions = {
   fileSizeLimitBytes: number
@@ -20,7 +19,7 @@ type MultipartParseOptions = {
 @injectable()
 export class PhotoUploadParser {
   async parse(context: Context, options: MultipartParseOptions): Promise<UploadAssetInput[]> {
-    const headers = this.normalizeRequestHeaders(context.req.raw.headers)
+    const headers = normalizeRequestHeaders(context.req.raw.headers)
     if (!headers['content-type']) {
       throw new BizException(ErrorCode.COMMON_BAD_REQUEST, { message: '缺少 Content-Type 头' })
     }
@@ -95,7 +94,7 @@ export class PhotoUploadParser {
         }
 
         if (typeof value === 'string') {
-          directory = this.normalizeDirectoryValue(value)
+          directory = normalizeDirectoryValue(value)
         }
       })
 
@@ -120,7 +119,7 @@ export class PhotoUploadParser {
             process.nextTick(() => {
               fail(
                 new BizException(ErrorCode.COMMON_BAD_REQUEST, {
-                  message: `单次上传大小不能超过 ${this.formatBytesForDisplay(normalizedBatchLimit)}`,
+                  message: `单次上传大小不能超过 ${formatBytesForDisplay(normalizedBatchLimit)}`,
                 }),
               )
             })
@@ -138,7 +137,7 @@ export class PhotoUploadParser {
           process.nextTick(() => {
             fail(
               new BizException(ErrorCode.COMMON_BAD_REQUEST, {
-                message: `文件 ${info.filename} 超出大小限制 ${this.formatBytesForDisplay(normalizedFileSizeLimit)}`,
+                message: `文件 ${info.filename} 超出大小限制 ${formatBytesForDisplay(normalizedFileSizeLimit)}`,
               }),
             )
           })
@@ -182,30 +181,6 @@ export class PhotoUploadParser {
 
       requestStream.pipe(busboy)
     })
-  }
-
-  private formatBytesForDisplay(bytes: number): string {
-    return `${this.formatBytesToMb(bytes)} MB`
-  }
-
-  private formatBytesToMb(bytes: number): number {
-    return Number((bytes / BYTES_PER_MB).toFixed(2))
-  }
-
-  private normalizeDirectoryValue(value: string | null): string | null {
-    if (!value) {
-      return null
-    }
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : null
-  }
-
-  private normalizeRequestHeaders(headers: Headers): Record<string, string> {
-    const result: Record<string, string> = {}
-    headers.forEach((value, key) => {
-      result[key.toLowerCase()] = value
-    })
-    return result
   }
 
   private createReadableFromRequest(request: Request): Readable {

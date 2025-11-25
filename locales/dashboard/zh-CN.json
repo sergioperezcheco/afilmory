@@ -671,7 +671,7 @@
   "storage.providers.prompt.sync.description": "存储提供方配置已保存。是否立即前往数据同步，扫描存储并更新数据库？",
   "storage.providers.prompt.sync.title": "立即同步照片？",
   "storage.providers.secure-access.description": "启用后将通过服务端生成短期签名链接，便于追踪与及时吊销；关闭则使用公开地址（安全性更低）。",
-  "storage.providers.secure-access.helper": "建议在托管存储或需要访问日志时开启，需要具备 S3/B2 的签名下载权限。",
+  "storage.providers.secure-access.helper": "建议在托管存储或需要访问日志时开启，需要具备 S3 的签名下载权限。",
   "storage.providers.secure-access.managed-note": "托管存储由平台统一控制此选项，如需调整请联系管理员。",
   "storage.providers.secure-access.title": "安全访问代理",
   "storage.providers.security.description": "密钥、令牌等敏感凭据会使用 {{algorithm}} 加密以保护数据。",

@@ -8,27 +8,29 @@ import type {
   StorageUploadOptions,
 } from '@afilmory/builder/storage/interfaces.js'
 
+import { joinSegments, normalizePath } from '../../content/photo/access/storage-access.utils'
+
 type PrefixedStorageObject = StorageObject & { key: string }
 
 export class ManagedStorageProvider implements StorageProvider {
   private readonly upstream: StorageProvider
-  private readonly upstreamConfig: RemoteStorageConfig
+
   private readonly effectivePrefix: string
   private readonly needsManualPrefix: boolean
 
   constructor(private readonly config: ManagedStorageConfig) {
-    const tenantSegment = this.normalizePath(config.tenantId)
+    const tenantSegment = normalizePath(config.tenantId)
     if (!tenantSegment) {
       throw new Error('Managed storage provider requires a valid tenantId.')
     }
 
-    const upstreamBase = this.normalizePath(this.extractUpstreamBasePath(config.upstream))
-    const customBase = this.normalizePath(config.basePrefix)
-    const combinedBase = this.joinSegments(upstreamBase, customBase)
-    this.effectivePrefix = this.joinSegments(combinedBase, tenantSegment)
+    const upstreamBase = normalizePath(this.extractUpstreamBasePath(config.upstream))
+    const customBase = normalizePath(config.basePrefix)
+    const combinedBase = joinSegments(upstreamBase, customBase)
+    this.effectivePrefix = joinSegments(combinedBase, tenantSegment)
 
     const scopedConfig = this.applyTenantPrefix(config.upstream, this.effectivePrefix)
-    this.upstreamConfig = scopedConfig
+
     this.needsManualPrefix =
       scopedConfig.provider === 's3' || scopedConfig.provider === 'oss' || scopedConfig.provider === 'cos'
     this.upstream = StorageFactory.createProvider(scopedConfig)
@@ -92,12 +94,12 @@ export class ManagedStorageProvider implements StorageProvider {
   }
 
   private prepareKeyForUpstream(key: string): string {
-    const normalizedKey = this.normalizePath(key) ?? ''
+    const normalizedKey = normalizePath(key) || ''
     if (!this.needsManualPrefix) {
       return normalizedKey
     }
 
-    return this.joinSegments(this.effectivePrefix, normalizedKey)
+    return joinSegments(this.effectivePrefix, normalizedKey)
   }
 
   private toUpstreamObjects(objects: StorageObject[]): PrefixedStorageObject[] {
@@ -132,7 +134,7 @@ export class ManagedStorageProvider implements StorageProvider {
   }
 
   private stripEffectivePrefix(rawKey: string): string {
-    const normalizedKey = this.normalizePath(rawKey) ?? ''
+    const normalizedKey = normalizePath(rawKey) || ''
     if (!this.effectivePrefix) {
       return normalizedKey
     }
@@ -149,38 +151,18 @@ export class ManagedStorageProvider implements StorageProvider {
     return normalizedKey
   }
 
-  private normalizePath(value?: string | null): string | null {
-    if (!value) {
-      return null
-    }
-    const normalized = value
-      .replaceAll('\\', '/')
-      .replaceAll(/\/+/g, '/')
-      .replaceAll(/^\/+|\/+$/g, '')
-    return normalized.length > 0 ? normalized : null
-  }
-
-  private joinSegments(...segments: Array<string | null>): string {
-    const filtered = segments.filter((segment): segment is string => typeof segment === 'string' && segment.length > 0)
-    if (filtered.length === 0) {
-      return ''
-    }
-    return filtered
-      .map((segment) => segment.replaceAll(/^\/+|\/+$/g, ''))
-      .filter(Boolean)
-      .join('/')
-  }
-
   private extractUpstreamBasePath(config: RemoteStorageConfig): string | null {
     switch (config.provider) {
       case 's3':
       case 'oss':
       case 'cos':
       case 'b2': {
-        return this.normalizePath(config.prefix)
+        const normalized = normalizePath(config.prefix)
+        return normalized || null
       }
       case 'github': {
-        return this.normalizePath(config.path)
+        const normalized = normalizePath(config.path)
+        return normalized || null
       }
       default: {
         return null
@@ -189,7 +171,7 @@ export class ManagedStorageProvider implements StorageProvider {
   }
 
   private applyTenantPrefix(config: RemoteStorageConfig, prefix: string): RemoteStorageConfig {
-    const normalizedPrefix = this.normalizePath(prefix)
+    const normalizedPrefix = normalizePath(prefix) || null
     if (!normalizedPrefix) {
       return config
     }

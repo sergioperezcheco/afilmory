@@ -6,6 +6,7 @@ import { CURRENT_PHOTO_MANIFEST_VERSION, DATABASE_ONLY_PROVIDER, photoAssets, ph
 import { createLogger, EventEmitterService } from '@afilmory/framework'
 import { DbAccessor } from 'core/database/database.provider'
 import { BizException, ErrorCode } from 'core/errors'
+import { formatBytesToMb } from 'core/modules/content/photo/access/storage-access.utils'
 import { PhotoBuilderService } from 'core/modules/content/photo/builder/photo-builder.service'
 import { PhotoStorageService } from 'core/modules/content/photo/storage/photo-storage.service'
 import { BILLING_USAGE_EVENT } from 'core/modules/platform/billing/billing.constants'
@@ -1389,11 +1390,6 @@ export class DataSyncService {
     return value * 1024 * 1024
   }
 
-  private formatBytesToMb(size: number): number {
-    const mb = size / (1024 * 1024)
-    return Number(mb.toFixed(2))
-  }
-
   private ensureLibraryCapacityLimit(payload: { current: number; incoming: number; limit: number | null }): void {
     if (payload.limit === null || payload.incoming === 0) {
       return
@@ -1420,8 +1416,8 @@ export class DataSyncService {
       return
     }
 
-    const readableLimit = limits?.maxObjectSizeMb ?? this.formatBytesToMb(maxBytes)
-    const actualSize = this.formatBytesToMb(size)
+    const readableLimit = limits?.maxObjectSizeMb ?? formatBytesToMb(maxBytes)
+    const actualSize = formatBytesToMb(size)
 
     throw new BizException(ErrorCode.COMMON_BAD_REQUEST, {
       message: `存储对象 ${storageObject.key} (${actualSize} MB) 超出允许的同步大小 ${readableLimit} MB`,

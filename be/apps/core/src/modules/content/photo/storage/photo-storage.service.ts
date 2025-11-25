@@ -9,13 +9,20 @@ import type {
   S3CompatibleConfig,
 } from '@afilmory/builder/storage/interfaces.js'
 import { BizException, ErrorCode } from 'core/errors'
-import { normalizeStringToUndefined, requireStringWithMessage } from 'core/helpers/normalize.helper'
+import {
+  normalizeStringToUndefined,
+  parseBoolean,
+  parseNumber,
+  requireStringWithMessage,
+} from 'core/helpers/normalize.helper'
 import { BuilderConfigService } from 'core/modules/configuration/builder-config/builder-config.service'
 import { SettingService } from 'core/modules/configuration/setting/setting.service'
 import type { BuilderStorageProvider } from 'core/modules/configuration/setting/storage-provider.utils'
 import { SystemSettingService } from 'core/modules/configuration/system-setting/system-setting.service'
 import { StoragePlanService } from 'core/modules/platform/billing/storage-plan.service'
 import { injectable } from 'tsyringe'
+
+import { parseRetryMode } from './storage-config-parser.utils'
 
 type ResolveOverrides = {
   builderConfig?: BuilderConfig
@@ -131,6 +138,7 @@ export class PhotoStorageService {
         if (accessKeyId) result.accessKeyId = accessKeyId
         const secretAccessKey = normalizeStringToUndefined(config.secretAccessKey)
         if (secretAccessKey) result.secretAccessKey = secretAccessKey
+
         const prefix = normalizeStringToUndefined(config.prefix)
         if (prefix) result.prefix = prefix
         const customDomain = normalizeStringToUndefined(config.customDomain)
@@ -138,27 +146,27 @@ export class PhotoStorageService {
         const excludeRegex = normalizeStringToUndefined(config.excludeRegex)
         if (excludeRegex) result.excludeRegex = excludeRegex
 
-        const maxFileLimit = this.parseNumber(config.maxFileLimit)
+        const maxFileLimit = parseNumber(config.maxFileLimit)
         if (typeof maxFileLimit === 'number') result.maxFileLimit = maxFileLimit
-        const keepAlive = this.parseBoolean(config.keepAlive)
+        const keepAlive = parseBoolean(config.keepAlive)
         if (typeof keepAlive === 'boolean') result.keepAlive = keepAlive
-        const maxSockets = this.parseNumber(config.maxSockets)
+        const maxSockets = parseNumber(config.maxSockets)
         if (typeof maxSockets === 'number') result.maxSockets = maxSockets
-        const connectionTimeoutMs = this.parseNumber(config.connectionTimeoutMs)
+        const connectionTimeoutMs = parseNumber(config.connectionTimeoutMs)
         if (typeof connectionTimeoutMs === 'number') result.connectionTimeoutMs = connectionTimeoutMs
-        const socketTimeoutMs = this.parseNumber(config.socketTimeoutMs)
+        const socketTimeoutMs = parseNumber(config.socketTimeoutMs)
         if (typeof socketTimeoutMs === 'number') result.socketTimeoutMs = socketTimeoutMs
-        const requestTimeoutMs = this.parseNumber(config.requestTimeoutMs)
+        const requestTimeoutMs = parseNumber(config.requestTimeoutMs)
         if (typeof requestTimeoutMs === 'number') result.requestTimeoutMs = requestTimeoutMs
-        const idleTimeoutMs = this.parseNumber(config.idleTimeoutMs)
+        const idleTimeoutMs = parseNumber(config.idleTimeoutMs)
         if (typeof idleTimeoutMs === 'number') result.idleTimeoutMs = idleTimeoutMs
-        const totalTimeoutMs = this.parseNumber(config.totalTimeoutMs)
+        const totalTimeoutMs = parseNumber(config.totalTimeoutMs)
         if (typeof totalTimeoutMs === 'number') result.totalTimeoutMs = totalTimeoutMs
-        const retryMode = this.parseRetryMode(config.retryMode)
+        const retryMode = parseRetryMode(config.retryMode)
         if (retryMode) result.retryMode = retryMode
-        const maxAttempts = this.parseNumber(config.maxAttempts)
+        const maxAttempts = parseNumber(config.maxAttempts)
         if (typeof maxAttempts === 'number') result.maxAttempts = maxAttempts
-        const downloadConcurrency = this.parseNumber(config.downloadConcurrency)
+        const downloadConcurrency = parseNumber(config.downloadConcurrency)
         if (typeof downloadConcurrency === 'number') result.downloadConcurrency = downloadConcurrency
         const sigV4Service = normalizeStringToUndefined(config.sigV4Service)
         if (sigV4Service) result.sigV4Service = sigV4Service
@@ -181,7 +189,7 @@ export class PhotoStorageService {
         if (token) result.token = token
         const pathValue = normalizeStringToUndefined(config.path)
         if (pathValue) result.path = pathValue
-        const useRawUrl = this.parseBoolean(config.useRawUrl)
+        const useRawUrl = parseBoolean(config.useRawUrl)
         if (typeof useRawUrl === 'boolean') result.useRawUrl = useRawUrl
 
         return result
@@ -216,11 +224,11 @@ export class PhotoStorageService {
         const excludeRegex = normalizeStringToUndefined(config.excludeRegex)
         if (excludeRegex) result.excludeRegex = excludeRegex
 
-        const maxFileLimit = this.parseNumber(config.maxFileLimit)
+        const maxFileLimit = parseNumber(config.maxFileLimit)
         if (typeof maxFileLimit === 'number') result.maxFileLimit = maxFileLimit
-        const authorizationTtlMs = this.parseNumber(config.authorizationTtlMs)
+        const authorizationTtlMs = parseNumber(config.authorizationTtlMs)
         if (typeof authorizationTtlMs === 'number') result.authorizationTtlMs = authorizationTtlMs
-        const uploadUrlTtlMs = this.parseNumber(config.uploadUrlTtlMs)
+        const uploadUrlTtlMs = parseNumber(config.uploadUrlTtlMs)
         if (typeof uploadUrlTtlMs === 'number') result.uploadUrlTtlMs = uploadUrlTtlMs
 
         return result
@@ -240,45 +248,6 @@ export class PhotoStorageService {
         message: `云端服务不支持 ${label} 存储提供商`,
       })
     }
-  }
-
-  private parseNumber(value?: string | null): number | undefined {
-    const normalized = normalizeStringToUndefined(value)
-    if (!normalized) {
-      return undefined
-    }
-
-    const parsed = Number(normalized)
-    return Number.isFinite(parsed) ? parsed : undefined
-  }
-
-  private parseBoolean(value?: string | null): boolean | undefined {
-    const normalized = normalizeStringToUndefined(value)
-    if (!normalized) {
-      return undefined
-    }
-
-    const lowered = normalized.toLowerCase()
-    if (['true', '1', 'yes', 'y', 'on'].includes(lowered)) {
-      return true
-    }
-    if (['false', '0', 'no', 'n', 'off'].includes(lowered)) {
-      return false
-    }
-    return undefined
-  }
-
-  private parseRetryMode(value?: string | null): S3CompatibleConfig['retryMode'] | undefined {
-    const normalized = normalizeStringToUndefined(value)
-    if (!normalized) {
-      return undefined
-    }
-
-    if (normalized === 'standard' || normalized === 'adaptive' || normalized === 'legacy') {
-      return normalized
-    }
-
-    return undefined
   }
 
   private ensureUserSettings(config: BuilderConfig): NonNullable<BuilderConfig['user']> {
