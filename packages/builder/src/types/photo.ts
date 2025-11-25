@@ -59,7 +59,12 @@ export interface PhotoManifestItem extends PhotoInfo {
   id: string
   originalUrl: string
   format: string
-  thumbnailUrl: string
+  thumbnailUrl: string | null
+  /**
+   * Optional object storage key for the generated thumbnail when hosted privately.
+   * Consumers can use this to request signed URLs.
+   */
+  thumbnailKey?: string | null
   thumbHash: string | null
   width: number
   height: number

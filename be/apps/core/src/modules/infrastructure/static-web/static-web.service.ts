@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import type { PhotoManifestItem } from '@afilmory/builder'
 import { SiteSettingService } from 'core/modules/configuration/site-setting/site-setting.service'
 import { ManifestService } from 'core/modules/content/manifest/manifest.service'
+import { StorageAccessService } from 'core/modules/content/photo/access/storage-access.service'
 import type { Context } from 'hono'
 import { DOMParser } from 'linkedom'
 import { injectable } from 'tsyringe'
@@ -56,6 +57,7 @@ export class StaticWebService extends StaticAssetService {
     private readonly manifestService: ManifestService,
     private readonly siteSettingService: SiteSettingService,
     private readonly staticAssetHostService: StaticAssetHostService,
+    private readonly storageAccessService: StorageAccessService,
   ) {
     super({
       routeSegment: STATIC_WEB_ROUTE_SEGMENT,
@@ -68,7 +70,8 @@ export class StaticWebService extends StaticAssetService {
 
   protected override async decorateDocument(document: StaticAssetDocument): Promise<void> {
     const siteConfig = await this.siteSettingService.getSiteConfig()
-    this.injectConfigScript(document, siteConfig)
+    const secureAccessEnabled = await this.storageAccessService.isSecureAccessEnabled().catch(() => false)
+    this.injectConfigScript(document, siteConfig, secureAccessEnabled)
     this.injectSiteMetadata(document, siteConfig)
     await this.injectManifestScript(document)
   }
@@ -146,7 +149,11 @@ export class StaticWebService extends StaticAssetService {
     }
   }
 
-  private injectConfigScript(document: StaticAssetDocument, siteConfig: TenantSiteConfig): void {
+  private injectConfigScript(
+    document: StaticAssetDocument,
+    siteConfig: TenantSiteConfig,
+    secureAccessEnabled: boolean,
+  ): void {
     const configScript = document.head?.querySelector('#config')
     if (!configScript) {
       return
@@ -154,6 +161,7 @@ export class StaticWebService extends StaticAssetService {
 
     const payload = JSON.stringify({
       useCloud: true,
+      secureAccessEnabled,
     })
     const siteConfigPayload = JSON.stringify(siteConfig)
     configScript.textContent = `window.__CONFIG__ = ${payload};window.__SITE_CONFIG__ = ${siteConfigPayload}`

@@ -1,13 +1,15 @@
 import { clsxm } from '@afilmory/utils'
 import { WebGLImageViewer } from '@afilmory/webgl-viewer'
 import { AnimatePresence, m } from 'motion/react'
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { useMediaQuery } from 'usehooks-ts'
 
 import { useShowContextMenu } from '~/atoms/context-menu'
 import { canUseWebGL } from '~/lib/feature'
+import type { AssetDescriptor } from '~/lib/secure-asset'
+import { getDisplayAssetUrl, isSecureAccessRequired } from '~/lib/secure-asset'
 
 import { SlidingNumber } from '../number/SlidingNumber'
 import { DOMImageViewer } from './DOMImageViewer'
@@ -27,6 +29,8 @@ import type { ProgressiveImageProps, WebGLImageViewerRef } from './types'
 export const ProgressiveImage = ({
   src,
   thumbnailSrc,
+  originalObjectKey,
+  thumbnailObjectKey,
   alt,
   width,
   height,
@@ -45,6 +49,7 @@ export const ProgressiveImage = ({
   loadingIndicatorRef,
 }: ProgressiveImageProps) => {
   const { t } = useTranslation()
+  const secureAccessRequired = isSecureAccessRequired()
 
   // State management
   const [state, setState] = useProgressiveImageState()
@@ -77,9 +82,56 @@ export const ProgressiveImage = ({
     return src
   }, [src])
 
+  const [resolvedThumbnailSrc, setResolvedThumbnailSrc] = useState<string | null>(thumbnailSrc ?? null)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!secureAccessRequired) {
+      setResolvedThumbnailSrc(thumbnailSrc ?? null)
+      return
+    }
+    if (!thumbnailObjectKey) {
+      setResolvedThumbnailSrc(thumbnailSrc ?? null)
+      return
+    }
+    getDisplayAssetUrl({
+      objectKey: thumbnailObjectKey,
+      intent: 'thumbnail',
+      fallbackUrl: thumbnailSrc ?? null,
+    })
+      .then((url) => {
+        if (!cancelled) {
+          setResolvedThumbnailSrc(url)
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to resolve secure thumbnail', error)
+        if (!cancelled) {
+          setResolvedThumbnailSrc(thumbnailSrc ?? null)
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [secureAccessRequired, thumbnailObjectKey, thumbnailSrc])
+
+  const imageSource: AssetDescriptor | string = useMemo(() => {
+    if (!secureAccessRequired) {
+      return resolvedSrc
+    }
+    if (originalObjectKey) {
+      return {
+        objectKey: originalObjectKey,
+        intent: 'photo',
+        fallbackUrl: resolvedSrc,
+      }
+    }
+    return resolvedSrc
+  }, [secureAccessRequired, originalObjectKey, resolvedSrc])
+
   // Hooks
   const imageLoaderManagerRef = useImageLoader(
-    resolvedSrc,
+    imageSource,
     isCurrentImage,
     highResLoaded,
     error,
@@ -123,11 +175,11 @@ export const ProgressiveImage = ({
       onTouchEnd={handleLongPressEnd}
     >
       {/* 缩略图 - 在高分辨率图片未加载或加载失败时显示 */}
-      {thumbnailSrc && (!isHighResImageRendered || error) && (
+      {resolvedThumbnailSrc && (!isHighResImageRendered || error) && (
         <img
           ref={thumbnailRef}
-          src={thumbnailSrc}
-          key={thumbnailSrc}
+          src={resolvedThumbnailSrc}
+          key={resolvedThumbnailSrc}
           alt={alt}
           className={clsxm(
             'absolute inset-0 h-full w-full object-contain transition-opacity duration-300',

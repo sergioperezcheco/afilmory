@@ -5,6 +5,7 @@ import type { FC } from 'react'
 import { useEffect, useRef, useState } from 'react'
 
 import { useMobile } from '~/hooks/useMobile'
+import { usePhotoThumbnailSrc } from '~/hooks/usePhotoThumbnailSrc'
 import { nextFrame } from '~/lib/dom'
 import type { PhotoManifest } from '~/types/photo'
 
@@ -150,31 +151,13 @@ export const GalleryThumbnail: FC<{
         {photos.slice(startIndex, endIndex + 1).map((photo, sliceIndex) => {
           const index = startIndex + sliceIndex
           return (
-            <button
-              type="button"
+            <GalleryThumbnailButton
               key={photo.id}
-              className={clsxm(
-                'contain-intrinsic-size relative shrink-0 overflow-hidden rounded-lg border-2 transition-all',
-                index === currentIndex
-                  ? 'scale-110 border-accent shadow-[0_0_20px_color-mix(in_srgb,var(--color-accent)_20%,transparent)]'
-                  : 'grayscale-50 border-accent/20 hover:border-accent hover:grayscale-0',
-              )}
-              style={
-                isMobile
-                  ? {
-                      width: thumbnailSize.mobile,
-                      height: thumbnailSize.mobile,
-                    }
-                  : {
-                      width: thumbnailSize.desktop,
-                      height: thumbnailSize.desktop,
-                    }
-              }
+              photo={photo}
+              isActive={index === currentIndex}
+              size={isMobile ? thumbnailSize.mobile : thumbnailSize.desktop}
               onClick={() => onIndexChange(index)}
-            >
-              {photo.thumbHash && <Thumbhash thumbHash={photo.thumbHash} className="size-fill absolute inset-0" />}
-              <img src={photo.thumbnailUrl} alt={photo.title} className="absolute inset-0 h-full w-full object-cover" />
-            </button>
+            />
           )
         })}
 
@@ -189,5 +172,36 @@ export const GalleryThumbnail: FC<{
         )}
       </div>
     </m.div>
+  )
+}
+
+const GalleryThumbnailButton: FC<{
+  photo: PhotoManifest
+  isActive: boolean
+  size: number
+  onClick: () => void
+}> = ({ photo, isActive, size, onClick }) => {
+  const thumbnailSrc = usePhotoThumbnailSrc(photo)
+
+  return (
+    <button
+      type="button"
+      className={clsxm(
+        'contain-intrinsic-size relative shrink-0 overflow-hidden rounded-lg border-2 transition-all',
+        isActive
+          ? 'scale-110 border-accent shadow-[0_0_20px_color-mix(in_srgb,var(--color-accent)_20%,transparent)]'
+          : 'grayscale-50 border-accent/20 hover:border-accent hover:grayscale-0',
+      )}
+      style={{
+        width: size,
+        height: size,
+      }}
+      onClick={onClick}
+    >
+      {photo.thumbHash && <Thumbhash thumbHash={photo.thumbHash} className="size-fill absolute inset-0" />}
+      {thumbnailSrc ? (
+        <img src={thumbnailSrc} alt={photo.title} className="absolute inset-0 h-full w-full object-cover" />
+      ) : null}
+    </button>
   )
 }

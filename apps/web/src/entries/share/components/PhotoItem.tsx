@@ -2,6 +2,7 @@ import type { PhotoManifestItem } from '@afilmory/builder'
 import { clsxm as cn } from '@afilmory/utils'
 import { thumbHashToDataURL } from 'thumbhash'
 
+import { usePhotoThumbnailSrc } from '~/hooks/usePhotoThumbnailSrc'
 import {
   CarbonIsoOutline,
   MaterialSymbolsShutterSpeed,
@@ -21,7 +22,7 @@ interface PhotoItemProps {
 export function PhotoItem({ photo, className }: PhotoItemProps) {
   // 生成 thumbhash 预览
   const thumbHashDataURL = photo.thumbHash ? thumbHashToDataURL(decompressUint8Array(photo.thumbHash)) : null
-
+  const thumbnailSrc = usePhotoThumbnailSrc(photo)
   const ratio = photo.aspectRatio
 
   // 格式化 EXIF 数据
@@ -91,12 +92,14 @@ export function PhotoItem({ photo, className }: PhotoItemProps) {
         {thumbHashDataURL && (
           <img src={thumbHashDataURL} alt={photo.title} className="absolute inset-0 size-full" loading="lazy" />
         )}
-        <img
-          src={photo.thumbnailUrl}
-          alt={photo.title}
-          className="absolute inset-0 size-full object-cover object-center"
-          loading="lazy"
-        />
+        {thumbnailSrc ? (
+          <img
+            src={thumbnailSrc}
+            alt={photo.title}
+            className="absolute inset-0 size-full object-cover object-center"
+            loading="lazy"
+          />
+        ) : null}
       </div>
 
       {/* 图片信息和 EXIF 覆盖层 */}

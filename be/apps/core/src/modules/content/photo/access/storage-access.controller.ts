@@ -18,7 +18,7 @@ export class StorageAccessController {
       throw new BizException(ErrorCode.COMMON_BAD_REQUEST, { message: '安全访问尚未启用' })
     }
     const storageKey = query.objectKey?.trim() || query.key?.trim() || ''
-    const { url, expiresAt } = await this.storageAccessService.issueSignedUrl({
+    const { url, expiresAt, headers } = await this.storageAccessService.issueSignedUrl({
       storageKey,
       intent: query.intent?.trim() || undefined,
       ttlSeconds: query.ttl,
@@ -27,18 +27,10 @@ export class StorageAccessController {
       referer: context.req.header('referer') ?? context.req.header('referrer') ?? null,
     })
 
-    if (this.shouldReturnJson(context, query.format)) {
-      return { url, expiresAt }
+    return {
+      url,
+      expiresAt,
+      headers,
     }
-
-    return context.redirect(url, 302)
-  }
-
-  private shouldReturnJson(context: Context, format?: string | null): boolean {
-    if (format === 'json') {
-      return true
-    }
-    const accept = context.req.header('accept')?.toLowerCase() ?? ''
-    return accept.includes('application/json')
   }
 }

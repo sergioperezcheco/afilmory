@@ -229,7 +229,7 @@ export const ExifPanel: FC<{
                 {/* 直方图 */}
                 <div className="mb-3">
                   <div className="mb-2 text-xs font-medium text-white/70">{t('exif.histogram')}</div>
-                  <HistogramChart thumbnailUrl={currentPhoto.thumbnailUrl} />
+                  <HistogramChart photo={currentPhoto} />
                 </div>
               </div>
             </div>

@@ -1,12 +1,14 @@
 import { LoadingState } from '@afilmory/webgl-viewer'
 import type { TFunction } from 'i18next'
-import { startTransition, useCallback, useEffect, useRef, useState } from 'react'
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { MenuItemSeparator, MenuItemText } from '~/atoms/context-menu'
 import { isMobileDevice } from '~/lib/device-viewport'
 import { ImageLoaderManager } from '~/lib/image-loader-manager'
+import type { AssetDescriptor } from '~/lib/secure-asset'
+import { resolveAssetRequest } from '~/lib/secure-asset'
 
 import type { LivePhotoVideoHandle } from './LivePhotoVideo'
 import type { LoadingIndicatorRef } from './LoadingIndicator'
@@ -59,8 +61,22 @@ export const useProgressiveImageState = (): [
   ]
 }
 
+const serializeSourceDescriptor = (descriptor: AssetDescriptor | string | null): string | null => {
+  if (!descriptor) {
+    return null
+  }
+  if (typeof descriptor === 'string') {
+    return descriptor
+  }
+  return JSON.stringify({
+    objectKey: descriptor.objectKey ?? null,
+    intent: descriptor.intent,
+    fallbackUrl: descriptor.fallbackUrl ?? null,
+  })
+}
+
 export const useImageLoader = (
-  src: string,
+  source: AssetDescriptor | string | null,
   isCurrentImage: boolean,
   highResLoaded: boolean,
   error: boolean,
@@ -72,12 +88,13 @@ export const useImageLoader = (
   setHighResLoaded?: (loaded: boolean) => void,
   setError?: (error: boolean) => void,
   setIsHighResImageRendered?: (rendered: boolean) => void,
-) => {
+): React.RefObject<ImageLoaderManager | null> => {
   const { t } = useTranslation()
   const imageLoaderManagerRef = useRef<ImageLoaderManager | null>(null)
+  const sourceKey = useMemo(() => serializeSourceDescriptor(source), [source])
 
   useEffect(() => {
-    if (highResLoaded || error || !isCurrentImage) return
+    if (highResLoaded || error || !isCurrentImage || !sourceKey || !source) return
 
     // Create new image loader manager
     const imageLoaderManager = new ImageLoaderManager()
@@ -96,7 +113,8 @@ export const useImageLoader = (
 
     const loadImage = async () => {
       try {
-        const result = await imageLoaderManager.loadImage(src, {
+        const resolvedSource = await resolveAssetRequest(source)
+        const result = await imageLoaderManager.loadImage(resolvedSource, {
           onProgress,
           onError,
           onLoadingStateUpdate: (state) => {
@@ -121,7 +139,15 @@ export const useImageLoader = (
     }
 
     cleanup()
-    loadImage()
+    loadImage().catch((loadError) => {
+      console.error('Failed to load image:', loadError)
+      setError?.(true)
+      loadingIndicatorRef?.current?.updateLoadingState({
+        isVisible: true,
+        isError: true,
+        errorMessage: t('photo.error.loading'),
+      })
+    })
 
     return () => {
       imageLoaderManager.cleanup()
@@ -130,7 +156,7 @@ export const useImageLoader = (
     highResLoaded,
     error,
     onProgress,
-    src,
+    sourceKey,
     onError,
     isCurrentImage,
     onBlobSrcChange,
@@ -140,6 +166,7 @@ export const useImageLoader = (
     setHighResLoaded,
     setError,
     setIsHighResImageRendered,
+    source,
   ])
 
   return imageLoaderManagerRef

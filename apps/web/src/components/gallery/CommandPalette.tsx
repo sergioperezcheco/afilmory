@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 
 import { gallerySettingAtom } from '~/atoms/app'
+import { usePhotoThumbnailSrc } from '~/hooks/usePhotoThumbnailSrc'
 import { usePhotoViewer } from '~/hooks/usePhotoViewer'
 import { MageLens } from '~/icons'
 
@@ -33,6 +34,18 @@ interface CommandPaletteProps {
 const allTags = photoLoader.getAllTags()
 const allCameras = photoLoader.getAllCameras()
 const allLenses = photoLoader.getAllLenses()
+
+const PhotoThumbnailIcon = ({ photo }: { photo: ReturnType<typeof photoLoader.getPhotos>[number] }) => {
+  const thumbnailSrc = usePhotoThumbnailSrc(photo)
+
+  if (!thumbnailSrc) {
+    return (
+      <div className="bg-fill-tertiary flex h-6 w-6 items-center justify-center rounded text-xs text-white/70">📷</div>
+    )
+  }
+
+  return <img src={thumbnailSrc} alt={photo.title || 'Photo'} className="h-6 w-6 rounded object-cover" />
+}
 
 const getLocationTokens = (
   location?: { locationName?: string | null; city?: string | null; country?: string | null } | null,
@@ -294,7 +307,7 @@ export const CommandPalette = ({ isOpen, onClose }: CommandPaletteProps) => {
           type: 'photo',
           title: photo.title || photo.id,
           subtitle: photo.description || locationSubtitle || `${photo.exif?.Model || 'Photo'}`,
-          icon: <img src={photo.thumbnailUrl} alt={photo.title || 'Photo'} className="h-6 w-6 rounded object-cover" />,
+          icon: <PhotoThumbnailIcon photo={photo} />,
           action: () => {
             const allPhotos = photoLoader.getPhotos()
             const photoIndex = allPhotos.findIndex((p) => p.id === photo.id)

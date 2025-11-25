@@ -1,6 +1,6 @@
 import type { B2Config, ManagedStorageConfig, S3CompatibleConfig, StorageConfig } from '@afilmory/builder'
 import { createS3Client } from '@afilmory/builder/s3/client.js'
-import { DATABASE_ONLY_PROVIDER, generateId, photoAccessLogs, photoAccessStats, photoAssets } from '@afilmory/db'
+import { generateId, photoAccessLogs, photoAccessStats, photoAssets } from '@afilmory/db'
 import { Sha256 } from '@aws-crypto/sha256-js'
 import { HttpRequest } from '@smithy/protocol-http'
 import { SignatureV4 } from '@smithy/signature-v4'
@@ -40,6 +40,7 @@ export type IssueSignedUrlResult = {
   url: string
   expiresAt: string
   tokenId: string
+  headers: Record<string, string>
 }
 
 const DEFAULT_TTL_SECONDS = 600
@@ -89,6 +90,16 @@ export class StorageAccessService {
       throw new BizException(ErrorCode.COMMON_BAD_REQUEST, { message: '缺少有效的 storage key' })
     }
 
+    const { storageConfig } = await this.photoStorageService.resolveConfigForTenant(tenant.tenant.id)
+    const secureAccessEnabled = await this.resolveSecureAccessPreference(storageConfig, tenant.tenant.id)
+    if (!secureAccessEnabled) {
+      throw new BizException(ErrorCode.COMMON_BAD_REQUEST, { message: 'Secure access is not enabled.' })
+    }
+    const target = this.resolveRemoteTarget(storageConfig, normalizedKey, tenant.tenant.id)
+    const ttl = this.normalizeTtlSeconds(options.ttlSeconds)
+    const { url, expiresAt, headers } = await this.createProviderSignedUrl(target, ttl)
+    const tokenId = generateId()
+
     const record = await db
       .select({
         id: photoAssets.id,
@@ -100,71 +111,56 @@ export class StorageAccessService {
       .limit(1)
       .then((rows) => rows[0])
 
-    if (!record) {
-      throw new BizException(ErrorCode.COMMON_NOT_FOUND, { message: '未找到对应的图片资源' })
-    }
-    if (record.storageProvider === DATABASE_ONLY_PROVIDER) {
-      throw new BizException(ErrorCode.COMMON_BAD_REQUEST, { message: '当前资源不支持生成访问链接' })
-    }
+    if (record) {
+      const now = new Date().toISOString()
 
-    const { storageConfig } = await this.photoStorageService.resolveConfigForTenant(tenant.tenant.id)
-    const secureAccessEnabled = await this.resolveSecureAccessPreference(storageConfig, tenant.tenant.id)
-    if (!secureAccessEnabled) {
-      throw new BizException(ErrorCode.COMMON_BAD_REQUEST, { message: 'Secure access is not enabled.' })
-    }
-    const target = this.resolveRemoteTarget(storageConfig, normalizedKey, tenant.tenant.id)
-    const ttl = this.normalizeTtlSeconds(options.ttlSeconds)
-    const { url, expiresAt } = await this.createProviderSignedUrl(target, ttl)
-    const tokenId = generateId()
-    const now = new Date().toISOString()
-
-    await db.insert(photoAccessLogs).values({
-      id: generateId(),
-      tenantId: tenant.tenant.id,
-      photoAssetId: record.id,
-      photoId: record.photoId,
-      storageKey: normalizedKey,
-      provider: target.kind,
-      intent: options.intent?.trim() || 'original',
-      tokenId,
-      signedUrl: url,
-      status: 'issued',
-      clientIp: options.clientIp ?? null,
-      userAgent: options.userAgent ?? null,
-      referer: options.referer ?? null,
-      expiresAt,
-      createdAt: now,
-      updatedAt: now,
-    })
-
-    await db
-      .insert(photoAccessStats)
-      .values({
+      await db.insert(photoAccessLogs).values({
+        id: generateId(),
         tenantId: tenant.tenant.id,
         photoAssetId: record.id,
         photoId: record.photoId,
-        viewCount: 1,
-        lastViewedAt: now,
+        storageKey: normalizedKey,
+        provider: target.kind,
+        intent: options.intent?.trim() || 'original',
+        tokenId,
+        signedUrl: url,
+        status: 'issued',
+        clientIp: options.clientIp ?? null,
+        userAgent: options.userAgent ?? null,
+        referer: options.referer ?? null,
+        expiresAt,
         createdAt: now,
         updatedAt: now,
       })
-      .onConflictDoUpdate({
-        target: [photoAccessStats.tenantId, photoAccessStats.photoAssetId],
-        set: {
-          viewCount: sql`${photoAccessStats.viewCount} + 1`,
-          lastViewedAt: now,
-          updatedAt: now,
-          photoId: record.photoId,
-        },
-      })
 
-    return { url, expiresAt, tokenId }
+      await db
+        .insert(photoAccessStats)
+        .values({
+          tenantId: tenant.tenant.id,
+          photoAssetId: record.id,
+          photoId: record.photoId,
+          viewCount: 1,
+          lastViewedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoUpdate({
+          target: [photoAccessStats.tenantId, photoAccessStats.photoAssetId],
+          set: {
+            viewCount: sql`${photoAccessStats.viewCount} + 1`,
+            lastViewedAt: now,
+            updatedAt: now,
+            photoId: record.photoId,
+          },
+        })
+    }
+    return { url, expiresAt, tokenId, headers }
   }
 
   private async createProviderSignedUrl(
     target: RemoteAccessTarget,
     ttlSeconds: number,
-  ): Promise<{ url: string; expiresAt: string }> {
+  ): Promise<{ url: string; expiresAt: string; headers: Record<string, string> }> {
     if (target.kind === 's3') {
       return await this.createS3SignedUrl(target.config, target.objectKey, ttlSeconds)
     }
@@ -363,7 +359,7 @@ export class StorageAccessService {
     config: S3CompatibleConfig,
     key: string,
     ttlSeconds: number,
-  ): Promise<{ url: string; expiresAt: string }> {
+  ): Promise<{ url: string; expiresAt: string; headers: Record<string, string> }> {
     if (!config.accessKeyId || !config.secretAccessKey) {
       throw new BizException(ErrorCode.COMMON_BAD_REQUEST, { message: 'S3 存储配置缺少访问密钥' })
     }
@@ -411,6 +407,7 @@ export class StorageAccessService {
     return {
       url: this.formatHttpRequestUrl(signed as HttpRequest),
       expiresAt: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
+      headers: {},
     }
   }
 }
@@ -423,17 +420,21 @@ class B2SigningClient {
     config: B2Config,
     remoteKey: string,
     ttlSeconds: number,
-  ): Promise<{ url: string; expiresAt: string }> {
+  ): Promise<{ url: string; expiresAt: string; headers: Record<string, string> }> {
     const normalizedKey = this.encodeFileName(remoteKey)
     const authorization = await this.authorize(config)
     const bucketName = await this.resolveBucketName(config, authorization)
     const validDuration = Math.min(Math.max(ttlSeconds, MIN_TTL_SECONDS), MAX_TTL_SECONDS)
     const token = await this.getDownloadToken(config, authorization, remoteKey, validDuration)
     const baseUrl = authorization.downloadUrl.replace(/\/+$/, '')
-    const url = `${baseUrl}/file/${bucketName}/${normalizedKey}?Authorization=${token}`
+
+    const url = `${config.customDomain || baseUrl}/file/${bucketName}/${normalizedKey}`
     return {
       url,
       expiresAt: new Date(Date.now() + validDuration * 1000).toISOString(),
+      headers: {
+        Authorization: token,
+      },
     }
   }
 

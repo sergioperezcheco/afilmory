@@ -4,6 +4,7 @@ import { m } from 'motion/react'
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { usePhotoThumbnailSrc } from '~/hooks/usePhotoThumbnailSrc'
 import { useContextPhotos, usePhotoViewer } from '~/hooks/usePhotoViewer'
 import {
   CarbonIsoOutline,
@@ -29,6 +30,7 @@ export const MasonryPhotoItem = ({ data, width, index: _ }: { data: PhotoManifes
   const [isConvertingVideo, setIsConvertingVideo] = useState(false)
   const [videoConvertionError, setVideoConversionError] = useState<unknown>(null)
 
+  const thumbnailSrc = usePhotoThumbnailSrc(data)
   const imageRef = useRef<HTMLImageElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -223,10 +225,10 @@ export const MasonryPhotoItem = ({ data, width, index: _ }: { data: PhotoManifes
       {/* Blurhash 占位符 */}
       {data.thumbHash && <Thumbhash thumbHash={data.thumbHash} className="absolute inset-0" />}
 
-      {!imageError && (
+      {!imageError && thumbnailSrc && (
         <img
           ref={imageRef}
-          src={data.thumbnailUrl}
+          src={thumbnailSrc}
           alt={data.title}
           loading="lazy"
           className={clsx('absolute inset-0 h-full w-full object-cover duration-300 group-hover:scale-105')}

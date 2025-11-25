@@ -5,6 +5,7 @@ import { RemoveScroll } from 'react-remove-scroll'
 
 import { NotFound } from '~/components/common/NotFound'
 import { PhotoViewer } from '~/components/ui/photo-viewer'
+import { usePhotoThumbnailSrc } from '~/hooks/usePhotoThumbnailSrc'
 import { useContextPhotos, usePhotoViewer } from '~/hooks/usePhotoViewer'
 import { useTitle } from '~/hooks/useTitle'
 import { deriveAccentFromSources } from '~/lib/color'
@@ -23,18 +24,19 @@ export const Component = () => {
   useTitle(photos[photoViewer.currentIndex]?.title || 'Not Found')
 
   const [accentColor, setAccentColor] = useState<string | null>(null)
+  const currentPhoto = photos[photoViewer.currentIndex] ?? null
+  const thumbnailSrc = usePhotoThumbnailSrc(currentPhoto)
 
   useEffect(() => {
-    const current = photos[photoViewer.currentIndex]
-    if (!current) return
+    if (!currentPhoto) return
 
     let isCancelled = false
 
     ;(async () => {
       try {
         const color = await deriveAccentFromSources({
-          thumbHash: current.thumbHash,
-          thumbnailUrl: current.thumbnailUrl,
+          thumbHash: currentPhoto.thumbHash,
+          thumbnailUrl: thumbnailSrc,
         })
         if (!isCancelled) {
           const $css = document.createElement('style')
@@ -59,7 +61,7 @@ export const Component = () => {
     return () => {
       isCancelled = true
     }
-  }, [photoViewer.currentIndex, photos])
+  }, [photoViewer.currentIndex, photos, thumbnailSrc, currentPhoto])
 
   if (!photos[photoViewer.currentIndex]) {
     return <NotFound />

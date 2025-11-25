@@ -1,6 +1,7 @@
 import type { RefObject } from 'react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
+import { usePhotoThumbnailSrc } from '~/hooks/usePhotoThumbnailSrc'
 import type { PhotoManifest } from '~/types/photo'
 
 import type { AnimationFrameRect, PhotoViewerTransition, PhotoViewerTransitionState } from './types'
@@ -34,6 +35,7 @@ export const usePhotoViewerTransitions = ({
   currentBlobSrc,
   isMobile,
 }: UsePhotoViewerTransitionsParams): UsePhotoViewerTransitionsResult => {
+  const thumbnailSrc = usePhotoThumbnailSrc(currentPhoto ?? null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const cachedTriggerRef = useRef<HTMLElement | null>(triggerElement)
   const wasOpenRef = useRef(isOpen)
@@ -134,7 +136,7 @@ export const usePhotoViewerTransitions = ({
       return
     }
 
-    const imageSrc = currentBlobSrc || currentPhoto.thumbnailUrl || currentPhoto.originalUrl || null
+    const imageSrc = currentBlobSrc || thumbnailSrc || currentPhoto?.originalUrl || null
 
     if (!imageSrc) {
       setIsViewerContentVisible(true)
@@ -243,7 +245,7 @@ export const usePhotoViewerTransitions = ({
       triggerEl instanceof HTMLImageElement && triggerEl.parentElement ? triggerEl.parentElement : triggerEl,
     )
 
-    const imageSrc = currentPhoto.thumbnailUrl || currentBlobSrc || currentPhoto.originalUrl || null
+    const imageSrc = thumbnailSrc || currentBlobSrc || currentPhoto?.originalUrl || null
 
     if (!imageSrc) {
       wasOpenRef.current = false

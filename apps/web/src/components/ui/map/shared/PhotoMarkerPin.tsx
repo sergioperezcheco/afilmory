@@ -3,6 +3,8 @@ import { m } from 'motion/react'
 import { Marker } from 'react-map-gl/maplibre'
 import { Link } from 'react-router'
 
+import { usePhotoThumbnailSrc } from '~/hooks/usePhotoThumbnailSrc'
+
 import type { PhotoMarkerPinProps } from './types'
 
 export const PhotoMarkerPin = ({ marker, isSelected = false, onClick, onClose }: PhotoMarkerPinProps) => {
@@ -41,10 +43,8 @@ export const PhotoMarkerPin = ({ marker, isSelected = false, onClick, onClose }:
 
             {/* Photo background preview */}
             <div className="absolute inset-0 overflow-hidden rounded-full">
-              <LazyImage
-                src={marker.photo.thumbnailUrl || marker.photo.originalUrl}
-                alt={marker.photo.title || marker.photo.id}
-                thumbHash={marker.photo.thumbHash}
+              <MarkerImage
+                photo={marker.photo}
                 className="h-full w-full object-cover opacity-40"
                 rootMargin="100px"
                 threshold={0.1}
@@ -98,10 +98,8 @@ export const PhotoMarkerPin = ({ marker, isSelected = false, onClick, onClose }:
 
             {/* Photo header */}
             <div className="relative h-32 overflow-hidden">
-              <LazyImage
-                src={marker.photo.thumbnailUrl || marker.photo.originalUrl}
-                alt={marker.photo.title || marker.photo.id}
-                thumbHash={marker.photo.thumbHash}
+              <MarkerImage
+                photo={marker.photo}
                 className="h-full w-full object-cover"
                 rootMargin="200px"
                 threshold={0.1}
@@ -178,5 +176,30 @@ export const PhotoMarkerPin = ({ marker, isSelected = false, onClick, onClose }:
         </HoverCardContent>
       </HoverCard>
     </Marker>
+  )
+}
+
+const MarkerImage = ({
+  photo,
+  className,
+  rootMargin,
+  threshold,
+}: {
+  photo: PhotoMarkerPinProps['marker']['photo']
+  className?: string
+  rootMargin?: string
+  threshold?: number
+}) => {
+  const thumbnailSrc = usePhotoThumbnailSrc(photo)
+
+  return (
+    <LazyImage
+      src={thumbnailSrc || photo.originalUrl}
+      alt={photo.title || photo.id}
+      thumbHash={photo.thumbHash}
+      className={className}
+      rootMargin={rootMargin}
+      threshold={threshold}
+    />
   )
 }

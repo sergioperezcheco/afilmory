@@ -4,6 +4,9 @@ import type { FC } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { usePhotoThumbnailSrc } from '~/hooks/usePhotoThumbnailSrc'
+import type { PhotoManifest } from '~/types/photo'
+
 interface CompressedHistogramData {
   red: number[]
   green: number[]
@@ -178,9 +181,9 @@ const drawHistogram = (canvas: HTMLCanvasElement, histogram: CompressedHistogram
 }
 
 export const HistogramChart: FC<{
-  thumbnailUrl: string
+  photo: PhotoManifest
   className?: string
-}> = ({ thumbnailUrl, className = '' }) => {
+}> = ({ photo, className = '' }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const previousHistogramRef = useRef<CompressedHistogramData | null>(null)
   const animationRef = useRef<number | null>(null)
@@ -188,8 +191,14 @@ export const HistogramChart: FC<{
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const { t } = useTranslation()
+  const thumbnailUrl = usePhotoThumbnailSrc(photo)
 
   useEffect(() => {
+    if (!thumbnailUrl) {
+      setError(true)
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError(false)
 

@@ -103,7 +103,10 @@ export class ImageLoaderManager {
     }
   }
 
-  async loadImage(src: string, callbacks: LoadingCallbacks = {}): Promise<ImageLoadResult> {
+  async loadImage(
+    source: string | { url: string; headers?: Record<string, string> },
+    callbacks: LoadingCallbacks = {},
+  ): Promise<ImageLoadResult> {
     const { onProgress, onError, onLoadingStateUpdate } = callbacks
 
     // Show loading indicator
@@ -114,7 +117,13 @@ export class ImageLoaderManager {
     return new Promise((resolve, reject) => {
       this.delayTimer = setTimeout(async () => {
         const xhr = new XMLHttpRequest()
-        xhr.open('GET', src)
+        const target = typeof source === 'string' ? { url: source, headers: {} } : source
+        xhr.open('GET', target.url)
+        if (target.headers) {
+          for (const [key, value] of Object.entries(target.headers)) {
+            xhr.setRequestHeader(key, value)
+          }
+        }
         xhr.responseType = 'blob'
 
         xhr.onload = async () => {
@@ -131,11 +140,7 @@ export class ImageLoaderManager {
                 return
               }
 
-              const result = await this.processImageBlob(
-                blob,
-                src, // 传递原始 URL
-                callbacks,
-              )
+              const result = await this.processImageBlob(blob, target.url, callbacks)
               resolve(result)
             } catch (error) {
               onLoadingStateUpdate?.({

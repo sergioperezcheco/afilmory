@@ -7,13 +7,22 @@ export const SHOW_SCALE_INDICATOR_DURATION = 1000
 
 // Video source 的 sum type：Live Photo 或 Motion Photo
 export type VideoSource =
-  | { type: 'live-photo'; videoUrl: string }
-  | { type: 'motion-photo'; imageUrl: string; offset: number; size?: number; presentationTimestamp?: number }
+  | { type: 'live-photo'; videoUrl: string; objectKey?: string | null }
+  | {
+      type: 'motion-photo'
+      imageUrl: string
+      objectKey?: string | null
+      offset: number
+      size?: number
+      presentationTimestamp?: number
+    }
   | { type: 'none' }
 
 export interface ProgressiveImageProps {
   src: string
   thumbnailSrc?: string
+  originalObjectKey?: string | null
+  thumbnailObjectKey?: string | null
 
   alt: string
   width?: number

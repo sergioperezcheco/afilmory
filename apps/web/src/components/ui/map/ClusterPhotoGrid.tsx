@@ -4,6 +4,7 @@ import { m } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
+import { usePhotoThumbnailSrc } from '~/hooks/usePhotoThumbnailSrc'
 import type { PhotoMarker } from '~/types/map'
 
 interface ClusterPhotoGridProps {
@@ -28,52 +29,7 @@ export const ClusterPhotoGrid = ({ photos, onPhotoClick }: ClusterPhotoGridProps
       {/* 照片网格 */}
       <div className="grid grid-cols-3 gap-2">
         {displayPhotos.map((photoMarker, index) => (
-          <m.div
-            key={photoMarker.photo.id}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{
-              ...Spring.presets.smooth,
-              delay: index * 0.05,
-            }}
-            className="group relative aspect-square overflow-hidden rounded-lg"
-          >
-            <Link
-              to={`/${photoMarker.photo.id}`}
-              target="_blank"
-              onClick={(e) => {
-                e.stopPropagation()
-                onPhotoClick?.(photoMarker)
-              }}
-              className="block h-full w-full"
-            >
-              <LazyImage
-                src={photoMarker.photo.thumbnailUrl || photoMarker.photo.originalUrl}
-                alt={photoMarker.photo.title || photoMarker.photo.id}
-                thumbHash={photoMarker.photo.thumbHash}
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                rootMargin="200px"
-                threshold={0.1}
-              />
-
-              {/* 悬停遮罩 */}
-              <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/20" />
-
-              {/* 悬停图标 */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                <div className="rounded-full bg-black/50 p-2 backdrop-blur-sm">
-                  <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </Link>
-          </m.div>
+          <ClusterPhotoTile key={photoMarker.photo.id} marker={photoMarker} index={index} onPhotoClick={onPhotoClick} />
         ))}
 
         {/* 更多照片指示器 */}
@@ -146,5 +102,62 @@ export const ClusterPhotoGrid = ({ photos, onPhotoClick }: ClusterPhotoGridProps
         </div>
       )}
     </div>
+  )
+}
+
+const ClusterPhotoTile = ({
+  marker,
+  index,
+  onPhotoClick,
+}: {
+  marker: PhotoMarker
+  index: number
+  onPhotoClick?: (photo: PhotoMarker) => void
+}) => {
+  const thumbnailSrc = usePhotoThumbnailSrc(marker.photo)
+
+  return (
+    <m.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{
+        ...Spring.presets.smooth,
+        delay: index * 0.05,
+      }}
+      className="group relative aspect-square overflow-hidden rounded-lg"
+    >
+      <Link
+        to={`/${marker.photo.id}`}
+        target="_blank"
+        onClick={(e) => {
+          e.stopPropagation()
+          onPhotoClick?.(marker)
+        }}
+        className="block h-full w-full"
+      >
+        <LazyImage
+          src={thumbnailSrc || marker.photo.originalUrl}
+          alt={marker.photo.title || marker.photo.id}
+          thumbHash={marker.photo.thumbHash}
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+          rootMargin="200px"
+          threshold={0.1}
+        />
+
+        <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/20" />
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+          <div className="rounded-full bg-black/50 p-2 backdrop-blur-sm">
+            <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+              />
+            </svg>
+          </div>
+        </div>
+      </Link>
+    </m.div>
   )
 }

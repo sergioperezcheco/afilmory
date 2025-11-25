@@ -1,6 +1,9 @@
+import type { PhotoManifestItem } from '@afilmory/builder'
 import { HoverCard, HoverCardContent, HoverCardTrigger, LazyImage } from '@afilmory/ui'
 import { m } from 'motion/react'
 import { Marker } from 'react-map-gl/maplibre'
+
+import { usePhotoThumbnailSrc } from '~/hooks/usePhotoThumbnailSrc'
 
 import { ClusterPhotoGrid } from '../ClusterPhotoGrid'
 import type { ClusterMarkerProps } from './types'
@@ -66,14 +69,7 @@ export const ClusterMarker = ({
 
                     return (
                       <div key={photoMarker.photo.id} className="absolute opacity-30" style={position}>
-                        <LazyImage
-                          src={photoMarker.photo.thumbnailUrl || photoMarker.photo.originalUrl}
-                          alt={photoMarker.photo.title || photoMarker.photo.id}
-                          thumbHash={photoMarker.photo.thumbHash}
-                          className="h-full w-full object-cover"
-                          rootMargin="100px"
-                          threshold={0.1}
-                        />
+                        <ClusterMosaicImage photo={photoMarker.photo} />
                       </div>
                     )
                   })}
@@ -115,5 +111,20 @@ export const ClusterMarker = ({
         </HoverCardContent>
       </HoverCard>
     </Marker>
+  )
+}
+
+const ClusterMosaicImage = ({ photo }: { photo: PhotoManifestItem }) => {
+  const thumbnailSrc = usePhotoThumbnailSrc(photo)
+
+  return (
+    <LazyImage
+      src={thumbnailSrc || photo.originalUrl}
+      alt={photo.title || photo.id}
+      thumbHash={photo.thumbHash}
+      className="h-full w-full object-cover"
+      rootMargin="100px"
+      threshold={0.1}
+    />
   )
 }

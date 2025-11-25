@@ -317,7 +317,9 @@ export const PhotoViewer = ({
                               loadingIndicatorRef={loadingIndicatorRef}
                               isCurrentImage={isCurrentImage}
                               src={photo.originalUrl}
-                              thumbnailSrc={photo.thumbnailUrl}
+                              originalObjectKey={photo.s3Key}
+                              thumbnailSrc={photo.thumbnailUrl ?? undefined}
+                              thumbnailObjectKey={photo.thumbnailKey ?? null}
                               alt={photo.title}
                               width={isCurrentImage ? currentPhoto.width : undefined}
                               height={isCurrentImage ? currentPhoto.height : undefined}
@@ -333,6 +335,7 @@ export const PhotoViewer = ({
                                   ? {
                                       type: 'motion-photo',
                                       imageUrl: photo.originalUrl,
+                                      objectKey: photo.s3Key ?? null,
                                       offset: photo.video.offset,
                                       size: photo.video.size,
                                       presentationTimestamp: photo.video.presentationTimestamp,
@@ -341,6 +344,7 @@ export const PhotoViewer = ({
                                     ? {
                                         type: 'live-photo',
                                         videoUrl: photo.video.videoUrl,
+                                        objectKey: photo.video.s3Key ?? null,
                                       }
                                     : { type: 'none' }
                               }

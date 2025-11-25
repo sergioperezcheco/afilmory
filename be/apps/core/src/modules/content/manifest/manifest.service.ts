@@ -1,20 +1,30 @@
-import type { AfilmoryManifest, CameraInfo, LensInfo, PhotoManifestItem } from '@afilmory/builder'
+import type {
+  AfilmoryManifest,
+  CameraInfo,
+  LensInfo,
+  ManagedStorageConfig,
+  PhotoManifestItem,
+  S3CompatibleConfig,
+  StorageConfig,
+} from '@afilmory/builder'
+import { DEFAULT_DIRECTORY as DEFAULT_THUMBNAIL_DIRECTORY } from '@afilmory/builder/plugins/thumbnail-storage/shared.js'
 import { CURRENT_PHOTO_MANIFEST_VERSION, photoAssets } from '@afilmory/db'
 import { APP_GLOBAL_PREFIX } from 'core/app.constants'
 import { DbAccessor } from 'core/database/database.provider'
-import { normalizedBoolean } from 'core/helpers/normalize.helper'
-import { SettingService } from 'core/modules/configuration/setting/setting.service'
-import { SystemSettingService } from 'core/modules/configuration/system-setting/system-setting.service'
+import { StorageAccessService } from 'core/modules/content/photo/access/storage-access.service'
+import { PhotoStorageService } from 'core/modules/content/photo/storage/photo-storage.service'
 import { requireTenantContext } from 'core/modules/platform/tenant/tenant.context'
 import { and, eq, inArray } from 'drizzle-orm'
 import { injectable } from 'tsyringe'
+
+const DEFAULT_THUMBNAIL_EXTENSION = '.jpg'
 
 @injectable()
 export class ManifestService {
   constructor(
     private readonly dbAccessor: DbAccessor,
-    private readonly settingService: SettingService,
-    private readonly systemSettingService: SystemSettingService,
+    private readonly photoStorageService: PhotoStorageService,
+    private readonly storageAccessService: StorageAccessService,
   ) {}
 
   async getManifest(): Promise<AfilmoryManifest> {
@@ -37,7 +47,11 @@ export class ManifestService {
       }
     }
 
-    const secureAccessEnabled = await this.isSecureAccessEnabled(tenant.tenant.id)
+    const { storageConfig } = await this.photoStorageService.resolveConfigForTenant(tenant.tenant.id)
+    const secureAccessEnabled = await this.storageAccessService.resolveSecureAccessPreference(
+      storageConfig,
+      tenant.tenant.id,
+    )
     const items: PhotoManifestItem[] = []
 
     for (const record of records) {
@@ -53,6 +67,9 @@ export class ManifestService {
         if (normalized.video?.type === 'live-photo' && normalized.video.s3Key) {
           normalized.video.videoUrl = this.createProxyUrl(normalized.video.s3Key, 'live-video')
         }
+        const thumbnailKey = this.resolveThumbnailStorageKey(storageConfig, normalized.id)
+        normalized.thumbnailKey = thumbnailKey
+        normalized.thumbnailUrl = thumbnailKey ? this.createProxyUrl(thumbnailKey, 'thumbnail') : null
       }
       items.push(normalized)
     }
@@ -140,15 +157,6 @@ export class ManifestService {
     return Array.from(lensMap.values()).sort((a, b) => a.displayName.localeCompare(b.displayName))
   }
 
-  private async isSecureAccessEnabled(tenantId: string): Promise<boolean> {
-    const activeProvider = await this.settingService.get('builder.storage.activeProvider', { tenantId })
-    if (activeProvider?.trim() === 'managed') {
-      return await this.systemSettingService.isManagedStorageSecureAccessEnabled()
-    }
-    const value = await this.settingService.get('photo.storage.secureAccess', { tenantId })
-    return normalizedBoolean(value ?? 'false')
-  }
-
   private createProxyUrl(storageKey: string, intent = 'photo'): string {
     const params = new URLSearchParams()
     params.set('objectKey', storageKey)
@@ -156,5 +164,69 @@ export class ManifestService {
       params.set('intent', intent)
     }
     return `${APP_GLOBAL_PREFIX}/storage/sign?${params.toString()}`
+  }
+
+  private resolveThumbnailStorageKey(storageConfig: StorageConfig, photoId: string): string | null {
+    if (!photoId) {
+      return null
+    }
+    const fileName = `${photoId}${DEFAULT_THUMBNAIL_EXTENSION}`
+    const prefix = this.resolveThumbnailRemotePrefix(storageConfig)
+    if (!prefix) {
+      return fileName
+    }
+    return this.joinSegments(prefix, fileName)
+  }
+
+  private resolveThumbnailRemotePrefix(storageConfig: StorageConfig): string | null {
+    const directory = this.normalizeStorageSegment(DEFAULT_THUMBNAIL_DIRECTORY)
+    if (!directory) {
+      return null
+    }
+
+    switch (storageConfig.provider) {
+      case 'managed': {
+        const managedConfig = storageConfig as ManagedStorageConfig
+        const managedBase = this.extractManagedBasePrefix(managedConfig)
+        return this.joinSegments(managedBase, directory)
+      }
+      case 's3':
+      case 'oss':
+      case 'cos': {
+        const s3Config = storageConfig as S3CompatibleConfig
+        const base = this.normalizeStorageSegment(s3Config.prefix)
+        return this.joinSegments(base, directory)
+      }
+      default: {
+        return directory
+      }
+    }
+  }
+
+  private extractManagedBasePrefix(config: ManagedStorageConfig): string | null {
+    if (!config.basePrefix) {
+      return null
+    }
+    return this.normalizeStorageSegment(config.basePrefix)
+  }
+
+  private normalizeStorageSegment(value?: string | null): string | null {
+    if (typeof value !== 'string') {
+      return null
+    }
+    const trimmed = value.trim()
+    if (!trimmed) {
+      return null
+    }
+    const normalized = trimmed.replaceAll('\\', '/').replaceAll(/^\/+|\/+$/g, '')
+    return normalized.length > 0 ? normalized : null
+  }
+
+  private joinSegments(...segments: Array<string | null | undefined>): string | null {
+    const filtered = segments.filter((segment): segment is string => typeof segment === 'string' && segment.length > 0)
+    if (filtered.length === 0) {
+      return null
+    }
+    return filtered.map((segment) => segment.replaceAll(/^\/+|\/+$/g, '')).join('/')
   }
 }
