@@ -13,7 +13,6 @@ import {
 } from '~/icons'
 import { isMobileDevice } from '~/lib/device-viewport'
 import { ImageLoaderManager } from '~/lib/image-loader-manager'
-import { getImageFormat } from '~/lib/image-utils'
 import type { PhotoManifest } from '~/types/photo'
 
 export const MasonryPhotoItem = ({ data, width, index: _ }: { data: PhotoManifest; width: number; index: number }) => {
@@ -95,9 +94,6 @@ export const MasonryPhotoItem = ({ data, width, index: _ }: { data: PhotoManifes
   }
 
   const exifData = formatExifData()
-
-  // 使用通用的图片格式提取函数
-  const imageFormat = getImageFormat(data.originalUrl || data.s3Key || '')
 
   // 检查是否有视频内容（Live Photo 或 Motion Photo）
   const hasVideo = data.video !== undefined
@@ -312,7 +308,7 @@ export const MasonryPhotoItem = ({ data, width, index: _ }: { data: PhotoManifes
 
               {/* 基本信息 */}
               <div className="mb-2 flex flex-wrap gap-2 text-xs text-white/80 opacity-0 group-hover:opacity-100">
-                <span>{imageFormat}</span>
+                <span>{data.format}</span>
                 <span>•</span>
                 <span>
                   {data.width} × {data.height}
