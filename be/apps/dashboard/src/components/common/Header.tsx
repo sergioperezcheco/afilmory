@@ -10,6 +10,7 @@ import { UserMenu } from './UserMenu'
 const navigationTabs = [
   { labelKey: 'nav.overview', path: '/' },
   { labelKey: 'nav.photos', path: '/photos' },
+  { labelKey: 'nav.comments', path: '/comments' },
   { labelKey: 'nav.analytics', path: '/analytics' },
   { labelKey: 'nav.settings', path: '/settings' },
 ] as const satisfies readonly { labelKey: I18nKeys; path: string }[]

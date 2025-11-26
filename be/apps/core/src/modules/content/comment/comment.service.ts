@@ -8,7 +8,7 @@ import { and, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm'
 import type { Context } from 'hono'
 import { inject, injectable } from 'tsyringe'
 
-import type { CommentReactionDto, CreateCommentDto, ListCommentsQueryDto } from './comment.dto'
+import type { CommentReactionDto, CreateCommentDto, ListAllCommentsQueryDto, ListCommentsQueryDto } from './comment.dto'
 import type { CommentModerationHook, CommentModerationHookInput } from './comment.moderation'
 import { COMMENT_MODERATION_HOOK } from './comment.moderation'
 
@@ -187,6 +187,145 @@ export class CommentService {
     let cursorCondition
     if (query.cursor) {
       const anchor = await this.findCommentForCursor(query.cursor, tenant.tenant.id, query.photoId)
+      cursorCondition = or(
+        gt(comments.createdAt, anchor.createdAt),
+        and(eq(comments.createdAt, anchor.createdAt), gt(comments.id, anchor.id)),
+      )
+    }
+
+    const baseWhere = cursorCondition ? and(...filters, cursorCondition) : and(...filters)
+
+    const rows = await db
+      .select({
+        id: comments.id,
+        photoId: comments.photoId,
+        parentId: comments.parentId,
+        userId: comments.userId,
+        content: comments.content,
+        status: comments.status,
+        createdAt: comments.createdAt,
+        updatedAt: comments.updatedAt,
+      })
+      .from(comments)
+      .where(baseWhere)
+      .orderBy(comments.createdAt, comments.id)
+      .limit(query.limit + 1)
+
+    const hasMore = rows.length > query.limit
+    const items = rows.slice(0, query.limit)
+    const commentIds = items.map((item) => item.id)
+
+    const reactions = await this.fetchReactionAggregations(tenant.tenant.id, commentIds, viewer.userId)
+
+    const nextCursor = hasMore && items.length > 0 ? items.at(-1)!.id : null
+
+    const commentItems = items.map((item) =>
+      this.toResponse({
+        ...item,
+        reactionCounts: reactions.counts.get(item.id) ?? {},
+        viewerReactions: reactions.viewer.get(item.id) ?? [],
+      }),
+    )
+
+    // Build relations map (parentId -> parent comment)
+    const relations: Record<string, CommentResponseItem> = {}
+    const parentIds = [...new Set(items.filter((item) => item.parentId).map((item) => item.parentId!))]
+
+    if (parentIds.length > 0) {
+      const parentRows = await db
+        .select({
+          id: comments.id,
+          photoId: comments.photoId,
+          parentId: comments.parentId,
+          userId: comments.userId,
+          content: comments.content,
+          status: comments.status,
+          createdAt: comments.createdAt,
+          updatedAt: comments.updatedAt,
+        })
+        .from(comments)
+        .where(
+          and(eq(comments.tenantId, tenant.tenant.id), inArray(comments.id, parentIds), isNull(comments.deletedAt)),
+        )
+
+      const parentReactions = await this.fetchReactionAggregations(
+        tenant.tenant.id,
+        parentRows.map((p) => p.id),
+        viewer.userId,
+      )
+
+      for (const parent of parentRows) {
+        relations[parent.id] = this.toResponse({
+          ...parent,
+          reactionCounts: parentReactions.counts.get(parent.id) ?? {},
+          viewerReactions: parentReactions.viewer.get(parent.id) ?? [],
+        })
+      }
+    }
+
+    // Build users map (userId -> user)
+    const users: Record<string, UserViewModel> = {}
+    const allUserIds = [
+      ...new Set([...items.map((item) => item.userId), ...Object.values(relations).map((r) => r.userId)]),
+    ]
+
+    if (allUserIds.length > 0) {
+      const userRows = await db
+        .select({
+          id: authUsers.id,
+          name: authUsers.name,
+          image: authUsers.image,
+        })
+        .from(authUsers)
+        .where(inArray(authUsers.id, allUserIds))
+
+      for (const user of userRows) {
+        users[user.id] = {
+          id: user.id,
+          name: user.name,
+          image: user.image,
+        }
+      }
+    }
+
+    return {
+      comments: commentItems,
+      relations,
+      users,
+      nextCursor,
+    }
+  }
+
+  async listAllComments(query: ListAllCommentsQueryDto): Promise<{
+    comments: CommentResponseItem[]
+    relations: Record<string, CommentResponseItem>
+    users: Record<string, UserViewModel>
+    nextCursor: string | null
+  }> {
+    const tenant = requireTenantContext()
+    const viewer = this.getViewer()
+    const db = this.dbAccessor.get()
+
+    // Only admin can access this endpoint
+    if (!viewer.isAdmin) {
+      throw new BizException(ErrorCode.COMMON_FORBIDDEN, { message: '仅管理员可以访问' })
+    }
+
+    const filters = [eq(comments.tenantId, tenant.tenant.id), isNull(comments.deletedAt)]
+
+    // Filter by photoId if provided
+    if (query.photoId) {
+      filters.push(eq(comments.photoId, query.photoId))
+    }
+
+    // Filter by status if provided
+    if (query.status) {
+      filters.push(eq(comments.status, query.status))
+    }
+
+    let cursorCondition
+    if (query.cursor) {
+      const anchor = await this.findCommentForCursorAll(query.cursor, tenant.tenant.id)
       cursorCondition = or(
         gt(comments.createdAt, anchor.createdAt),
         and(eq(comments.createdAt, anchor.createdAt), gt(comments.id, anchor.id)),
@@ -521,6 +660,23 @@ export class CommentService {
       })
       .from(comments)
       .where(and(eq(comments.id, commentId), eq(comments.tenantId, tenantId), eq(comments.photoId, photoId)))
+      .limit(1)
+
+    if (!comment) {
+      throw new BizException(ErrorCode.COMMON_NOT_FOUND, { message: '无效的游标' })
+    }
+    return comment
+  }
+
+  private async findCommentForCursorAll(commentId: string, tenantId: string) {
+    const db = this.dbAccessor.get()
+    const [comment] = await db
+      .select({
+        id: comments.id,
+        createdAt: comments.createdAt,
+      })
+      .from(comments)
+      .where(and(eq(comments.id, commentId), eq(comments.tenantId, tenantId)))
       .limit(1)
 
     if (!comment) {
