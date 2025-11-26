@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { RemoveScroll } from 'react-remove-scroll'
 
 import { NotFound } from '~/components/common/NotFound'
-import { PhotoViewer } from '~/components/ui/photo-viewer'
 import { useContextPhotos, usePhotoViewer } from '~/hooks/usePhotoViewer'
 import { useTitle } from '~/hooks/useTitle'
 import { deriveAccentFromSources } from '~/lib/color'
+import { PhotoViewer } from '~/modules/viewer'
 
 export const Component = () => {
   const photoViewer = usePhotoViewer()

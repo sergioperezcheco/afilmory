@@ -1,12 +1,12 @@
 import { fileTypeFromBlob } from 'file-type'
 
-import type { VideoSource } from '~/components/ui/photo-viewer/types'
 import { i18nAtom } from '~/i18n'
 import { imageConverterManager } from '~/lib/image-convert'
 import { jotaiStore } from '~/lib/jotai'
 import { LRUCache } from '~/lib/lru-cache'
 import { extractMotionPhotoVideo } from '~/lib/motion-photo-extractor'
 import { convertMovToMp4, needsVideoConversion } from '~/lib/video-converter'
+import type { VideoSource } from '~/modules/viewer/types'
 
 export interface LoadingState {
   isVisible: boolean

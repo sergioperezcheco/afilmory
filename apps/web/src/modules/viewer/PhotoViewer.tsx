@@ -13,16 +13,16 @@ import { Keyboard, Navigation, Virtual } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/react'
 
 import { useMobile } from '~/hooks/useMobile'
+import type { LoadingIndicatorRef } from '~/modules/inspector/LoadingIndicator'
+import { LoadingIndicator } from '~/modules/inspector/LoadingIndicator'
+import { PhotoInspector } from '~/modules/inspector/PhotoInspector'
+import { SharePanel } from '~/modules/social/SharePanel'
 import type { PhotoManifest } from '~/types/photo'
 
 import { PhotoViewerTransitionPreview } from './animations/PhotoViewerTransitionPreview'
 import { usePhotoViewerTransitions } from './animations/usePhotoViewerTransitions'
 import { GalleryThumbnail } from './GalleryThumbnail'
-import type { LoadingIndicatorRef } from './LoadingIndicator'
-import { LoadingIndicator } from './LoadingIndicator'
-import { PhotoInspector } from './PhotoInspector'
 import { ProgressiveImage } from './ProgressiveImage'
-import { SharePanel } from './SharePanel'
 
 interface PhotoViewerProps {
   photos: PhotoManifest[]

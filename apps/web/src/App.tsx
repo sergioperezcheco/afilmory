@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import { Outlet } from 'react-router'
 
-import { CommandPalette } from './components/gallery/CommandPalette'
 import { useCommandPaletteShortcut } from './hooks/useCommandPaletteShortcut'
+import { CommandPalette } from './modules/cmdk/CommandPalette'
 import { RootProviders } from './providers/root-providers'
 
 // prefetch preview page route

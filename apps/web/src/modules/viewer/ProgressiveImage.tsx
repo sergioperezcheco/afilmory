@@ -7,11 +7,13 @@ import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { useMediaQuery } from 'usehooks-ts'
 
 import { useShowContextMenu } from '~/atoms/context-menu'
+import { SlidingNumber } from '~/components/ui/number/SlidingNumber'
 import { canUseWebGL } from '~/lib/feature'
+import { HDRBadge } from '~/modules/media/HDRBadge'
+import { LivePhotoBadge } from '~/modules/media/LivePhotoBadge'
+import { LivePhotoVideo } from '~/modules/media/LivePhotoVideo'
 
-import { SlidingNumber } from '../number/SlidingNumber'
 import { DOMImageViewer } from './DOMImageViewer'
-import { HDRBadge } from './HDRBadge'
 import {
   createContextMenuItems,
   useImageLoader,
@@ -20,8 +22,6 @@ import {
   useScaleIndicator,
   useWebGLLoadingState,
 } from './hooks'
-import { LivePhotoBadge } from './LivePhotoBadge'
-import { LivePhotoVideo } from './LivePhotoVideo'
 import type { ProgressiveImageProps, WebGLImageViewerRef } from './types'
 
 export const ProgressiveImage = ({

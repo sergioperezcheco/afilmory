@@ -12,7 +12,7 @@ import { useOnClickOutside } from 'usehooks-ts'
 
 import { client } from '~/lib/client'
 
-import { useAnalysis } from './hooks/useAnalysis'
+import { useAnalysis } from '../viewer/hooks/useAnalysis'
 
 const reactions = ['👍', '😍', '🔥', '👏', '🌟', '🙌'] as const
 

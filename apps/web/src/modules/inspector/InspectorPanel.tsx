@@ -8,10 +8,9 @@ import { useTranslation } from 'react-i18next'
 
 import { injectConfig } from '~/config'
 import { useMobile } from '~/hooks/useMobile'
+import { ExifPanelContent } from '~/modules/metadata/ExifPanel'
+import { CommentsPanel } from '~/modules/social/comments'
 import type { PhotoManifest } from '~/types/photo'
-
-import { CommentsPanel } from './comments'
-import { ExifPanelContent } from './ExifPanel'
 
 type Tab = 'info' | 'comments'
 

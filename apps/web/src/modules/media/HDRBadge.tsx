@@ -14,5 +14,3 @@ export const HDRBadge: FC = () => {
     </div>
   )
 }
-
-export default HDRBadge

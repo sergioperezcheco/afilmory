@@ -3,9 +3,8 @@ import { m, useAnimationControls } from 'motion/react'
 import { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 
 import type { ImageLoaderManager } from '~/lib/image-loader-manager'
-
-import type { LoadingIndicatorRef } from './LoadingIndicator'
-import type { VideoSource } from './types'
+import type { LoadingIndicatorRef } from '~/modules/inspector/LoadingIndicator'
+import type { VideoSource } from '~/modules/viewer/types'
 
 interface LivePhotoVideoProps {
   /** Video source (Live Photo or Motion Photo) */

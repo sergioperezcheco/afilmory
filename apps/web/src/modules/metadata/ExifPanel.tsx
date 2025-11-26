@@ -1,4 +1,4 @@
-import './PhotoViewer.css'
+import '~/modules/viewer/PhotoViewer.css'
 
 import type { PhotoManifestItem, PickedExif } from '@afilmory/builder'
 import { MotionButtonBase, ScrollArea } from '@afilmory/ui'

@@ -2,9 +2,9 @@ import type { PickedExif } from '@afilmory/builder'
 import type { FC } from 'react'
 
 import { injectConfig } from '~/config'
+import { ExifPanel } from '~/modules/metadata/ExifPanel'
 import type { PhotoManifest } from '~/types/photo'
 
-import { ExifPanel } from './ExifPanel'
 import { InspectorPanel } from './InspectorPanel'
 
 export interface PhotoInspectorProps {

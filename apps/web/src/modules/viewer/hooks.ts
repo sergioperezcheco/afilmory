@@ -7,9 +7,9 @@ import { toast } from 'sonner'
 import { MenuItemSeparator, MenuItemText } from '~/atoms/context-menu'
 import { isMobileDevice } from '~/lib/device-viewport'
 import { ImageLoaderManager } from '~/lib/image-loader-manager'
+import type { LoadingIndicatorRef } from '~/modules/inspector/LoadingIndicator'
+import type { LivePhotoVideoHandle } from '~/modules/media/LivePhotoVideo'
 
-import type { LivePhotoVideoHandle } from './LivePhotoVideo'
-import type { LoadingIndicatorRef } from './LoadingIndicator'
 import type { ProgressiveImageState } from './types'
 import { SHOW_SCALE_INDICATOR_DURATION } from './types'
 

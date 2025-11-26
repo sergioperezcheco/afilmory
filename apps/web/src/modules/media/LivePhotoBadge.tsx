@@ -5,8 +5,7 @@ import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { isMobileDevice } from '~/lib/device-viewport'
-
-import type { LivePhotoBadgeProps } from './types'
+import type { LivePhotoBadgeProps } from '~/modules/viewer/types'
 
 export const LivePhotoBadge: FC<LivePhotoBadgeProps> = ({ livePhotoRef, isLivePhotoPlaying }) => {
   const { t } = useTranslation()

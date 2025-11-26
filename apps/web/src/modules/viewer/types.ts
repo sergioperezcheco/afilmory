@@ -1,7 +1,7 @@
 import type { ImageLoaderManager } from '~/lib/image-loader-manager'
 
-import type { LivePhotoVideoHandle } from './LivePhotoVideo'
-import type { LoadingIndicatorRef } from './LoadingIndicator'
+import type { LoadingIndicatorRef } from '../inspector'
+import type { LivePhotoVideoHandle } from '../media'
 
 export const SHOW_SCALE_INDICATOR_DURATION = 1000
 
