@@ -1,6 +1,7 @@
 import type { PhotoManifestItem } from '@afilmory/builder'
-import type { ManifestVersion } from '@afilmory/builder/manifest/version'
-import { CURRENT_MANIFEST_VERSION } from '@afilmory/builder/manifest/version'
+import type { ManifestVersion } from '@afilmory/builder/manifest/version.js'
+import { CURRENT_MANIFEST_VERSION } from '@afilmory/builder/manifest/version.ts'
+import { relations } from 'drizzle-orm'
 import {
   bigint,
   boolean,
@@ -31,6 +32,7 @@ export const userRoleEnum = pgEnum('user_role', ['user', 'admin', 'superadmin'])
 export const tenantStatusEnum = pgEnum('tenant_status', ['active', 'inactive', 'suspended'])
 export const tenantDomainStatusEnum = pgEnum('tenant_domain_status', ['pending', 'verified', 'disabled'])
 export const photoSyncStatusEnum = pgEnum('photo_sync_status', ['pending', 'synced', 'conflict'])
+export const commentStatusEnum = pgEnum('comment_status', ['pending', 'approved', 'rejected', 'hidden'])
 export const CURRENT_PHOTO_MANIFEST_VERSION: ManifestVersion = CURRENT_MANIFEST_VERSION
 
 export type PhotoAssetConflictType = 'missing-in-storage' | 'metadata-mismatch' | 'photo-id-conflict'
@@ -228,6 +230,63 @@ export const reactions = pgTable(
   (t) => [index('idx_reactions_tenant_ref_key').on(t.tenantId, t.refKey)],
 )
 
+export const comments = pgTable(
+  'comment',
+  {
+    id: snowflakeId,
+    tenantId: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    photoId: text('photo_id').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => authUsers.id, { onDelete: 'cascade' }),
+    parentId: text('parent_id'),
+    content: text('content').notNull(),
+    status: commentStatusEnum('status').notNull().default('approved'),
+    userAgent: text('user_agent'),
+    clientIp: text('client_ip'),
+    createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow().notNull(),
+    deletedAt: timestamp('deleted_at', { mode: 'string' }),
+  },
+  (t) => [
+    index('idx_comment_tenant_photo').on(t.tenantId, t.photoId),
+    index('idx_comment_parent').on(t.parentId),
+    index('idx_comment_user').on(t.userId),
+  ],
+)
+
+export const commentsRelations = relations(comments, ({ one, many }) => ({
+  parent: one(comments, {
+    fields: [comments.parentId],
+    references: [comments.id],
+  }),
+  children: many(comments),
+}))
+
+export const commentReactions = pgTable(
+  'comment_reaction',
+  {
+    id: snowflakeId,
+    tenantId: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    commentId: text('comment_id')
+      .notNull()
+      .references(() => comments.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => authUsers.id, { onDelete: 'cascade' }),
+    reaction: text('reaction').notNull(),
+    createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
+  },
+  (t) => [
+    unique('uq_comment_reaction_user').on(t.tenantId, t.commentId, t.userId, t.reaction),
+    index('idx_comment_reaction_comment').on(t.tenantId, t.commentId),
+  ],
+)
+
 export const managedStorageUsages = pgTable(
   'managed_storage_usage',
   {
@@ -411,6 +470,8 @@ export const dbSchema = {
   settings,
   systemSettings,
   reactions,
+  comments,
+  commentReactions,
   managedStorageUsages,
   managedStorageFileReferences,
   photoAssets,

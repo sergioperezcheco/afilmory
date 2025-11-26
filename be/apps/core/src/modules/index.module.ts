@@ -17,6 +17,7 @@ import { SettingModule } from './configuration/setting/setting.module'
 import { SiteSettingModule } from './configuration/site-setting/site-setting.module'
 import { StorageSettingModule } from './configuration/storage-setting/storage-setting.module'
 import { SystemSettingModule } from './configuration/system-setting/system-setting.module'
+import { CommentModule } from './content/comment/comment.module'
 import { FeedModule } from './content/feed/feed.module'
 import { OgModule } from './content/og/og.module'
 import { PhotoModule } from './content/photo/photo.module'
@@ -58,6 +59,7 @@ function createEventModuleOptions(redis: RedisAccessor) {
     SystemSettingModule,
     SuperAdminModule,
     PhotoModule,
+    CommentModule,
     ReactionModule,
     DashboardModule,
     BillingModule,

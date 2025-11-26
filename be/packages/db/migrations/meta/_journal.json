@@ -71,6 +71,13 @@
       "when": 1764070049538,
       "tag": "0009_stormy_sway",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1764154685207,
+      "tag": "0010_wise_doorman",
+      "breakpoints": true
     }
   ]
 }

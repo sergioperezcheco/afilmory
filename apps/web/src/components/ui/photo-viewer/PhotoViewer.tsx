@@ -12,18 +12,16 @@ import type { Swiper as SwiperType } from 'swiper'
 import { Keyboard, Navigation, Virtual } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/react'
 
-import { injectConfig } from '~/config'
 import { useMobile } from '~/hooks/useMobile'
 import type { PhotoManifest } from '~/types/photo'
 
 import { PhotoViewerTransitionPreview } from './animations/PhotoViewerTransitionPreview'
 import { usePhotoViewerTransitions } from './animations/usePhotoViewerTransitions'
-import { ExifPanel } from './ExifPanel'
 import { GalleryThumbnail } from './GalleryThumbnail'
 import type { LoadingIndicatorRef } from './LoadingIndicator'
 import { LoadingIndicator } from './LoadingIndicator'
+import { PhotoInspector } from './PhotoInspector'
 import { ProgressiveImage } from './ProgressiveImage'
-import { ReactionButton } from './Reaction'
 import { SharePanel } from './SharePanel'
 
 interface PhotoViewerProps {
@@ -262,18 +260,6 @@ export const PhotoViewer = ({
                     </div>
                   </m.div>
 
-                  {!isMobile && (injectConfig.useApi || injectConfig.useCloud) && (
-                    <ReactionButton
-                      photoId={currentPhoto.id}
-                      className="absolute right-4 bottom-4"
-                      style={{
-                        opacity: isViewerContentVisible ? 1 : 0,
-                        transition: 'opacity 180ms ease',
-                        pointerEvents: !isViewerContentVisible || isEntryAnimating ? 'none' : 'auto',
-                      }}
-                    />
-                  )}
-
                   {/* 加载指示器 */}
                   <LoadingIndicator ref={loadingIndicatorRef} />
                   {/* Swiper 容器 */}
@@ -391,12 +377,12 @@ export const PhotoViewer = ({
                 </Suspense>
               </div>
 
-              {/* ExifPanel - 在桌面端始终显示，在移动端根据状态显示 */}
+              {/* PhotoInspector - 在桌面端始终显示,在移动端根据状态显示 */}
 
               <Suspense>
                 <AnimatePresenceOnlyMobile>
                   {(!isMobile || showExifPanel) && (
-                    <ExifPanel
+                    <PhotoInspector
                       currentPhoto={currentPhoto}
                       exifData={currentPhoto.exif}
                       visible={isViewerContentVisible}
