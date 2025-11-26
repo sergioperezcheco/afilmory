@@ -1,7 +1,7 @@
 import { Thumbhash } from '@afilmory/ui'
 import clsx from 'clsx'
 import { m } from 'motion/react'
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useContextPhotos, usePhotoViewer } from '~/hooks/usePhotoViewer'
@@ -15,7 +15,7 @@ import { isMobileDevice } from '~/lib/device-viewport'
 import { ImageLoaderManager } from '~/lib/image-loader-manager'
 import type { PhotoManifest } from '~/types/photo'
 
-export const MasonryPhotoItem = ({ data, width, index: _ }: { data: PhotoManifest; width: number; index: number }) => {
+export const MasonryPhotoItem = memo(({ data, width }: { data: PhotoManifest; width: number }) => {
   const photos = useContextPhotos()
   const photoViewer = usePhotoViewer()
   const { t } = useTranslation()
@@ -369,4 +369,4 @@ export const MasonryPhotoItem = ({ data, width, index: _ }: { data: PhotoManifes
       )}
     </m.div>
   )
-}
+})

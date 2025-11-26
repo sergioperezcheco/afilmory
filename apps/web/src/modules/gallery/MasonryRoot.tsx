@@ -250,7 +250,7 @@ export const MasonryItem = memo(
           animate="visible"
           onAnimationComplete={shouldAnimate ? onAnimationComplete : undefined}
         >
-          <MasonryPhotoItem data={data as PhotoManifest} width={width} index={index} />
+          <MasonryPhotoItem data={data as PhotoManifest} width={width} />
         </m.div>
       )
     }
