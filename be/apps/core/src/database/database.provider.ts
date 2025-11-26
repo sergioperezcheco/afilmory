@@ -121,10 +121,7 @@ export class DrizzleProvider {
 
 @injectable()
 export class DbAccessor {
-  constructor(
-    private readonly provider: DrizzleProvider,
-    private readonly poolProvider: PgPoolProvider,
-  ) {}
+  constructor(private readonly provider: DrizzleProvider) {}
 
   get(): DrizzleDb {
     const store = getOptionalDbContext()

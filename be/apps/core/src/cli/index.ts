@@ -1,3 +1,5 @@
+import type { ManifestMigrationCliOptions } from './manifest-migrate'
+import { handleManifestMigrationCli, parseManifestMigrationCliArgs } from './manifest-migrate'
 import type { MigrationCliOptions } from './migrate'
 import { handleMigrationCli, parseMigrationCliArgs } from './migrate'
 import type { ResetCliOptions } from './reset-superadmin'
@@ -17,6 +19,14 @@ const cliCommands: Array<CliCommand<unknown>> = [
     execute: (options) => handleMigrationCli(options as MigrationCliOptions),
     onError: (error) => {
       console.error('Database migration failed', error)
+    },
+  },
+  {
+    name: 'manifest:migrate',
+    parse: parseManifestMigrationCliArgs,
+    execute: (options) => handleManifestMigrationCli(options as ManifestMigrationCliOptions),
+    onError: (error) => {
+      console.error('Manifest migration failed', error)
     },
   },
   {

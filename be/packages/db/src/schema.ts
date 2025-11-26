@@ -1,4 +1,6 @@
 import type { PhotoManifestItem } from '@afilmory/builder'
+import type { ManifestVersion } from '@afilmory/builder/manifest/version'
+import { CURRENT_MANIFEST_VERSION } from '@afilmory/builder/manifest/version'
 import {
   bigint,
   boolean,
@@ -29,7 +31,7 @@ export const userRoleEnum = pgEnum('user_role', ['user', 'admin', 'superadmin'])
 export const tenantStatusEnum = pgEnum('tenant_status', ['active', 'inactive', 'suspended'])
 export const tenantDomainStatusEnum = pgEnum('tenant_domain_status', ['pending', 'verified', 'disabled'])
 export const photoSyncStatusEnum = pgEnum('photo_sync_status', ['pending', 'synced', 'conflict'])
-export const CURRENT_PHOTO_MANIFEST_VERSION = 'v7' as const
+export const CURRENT_PHOTO_MANIFEST_VERSION: ManifestVersion = CURRENT_MANIFEST_VERSION
 
 export type PhotoAssetConflictType = 'missing-in-storage' | 'metadata-mismatch' | 'photo-id-conflict'
 /**
@@ -52,7 +54,7 @@ export interface PhotoAssetConflictPayload {
 }
 
 export interface PhotoAssetManifest {
-  version: typeof CURRENT_PHOTO_MANIFEST_VERSION
+  version: ManifestVersion
   data: PhotoManifestItem
 }
 
