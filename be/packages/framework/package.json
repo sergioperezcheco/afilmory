@@ -19,17 +19,17 @@
     "ioredis": ">=5.8.0"
   },
   "dependencies": {
-    "hono": "4.10.5",
+    "hono": "4.10.7",
     "picocolors": "1.1.1",
     "reflect-metadata": "0.2.2",
     "tsyringe": "4.10.0",
-    "zod": "^4.1.11"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
-    "@vitest/coverage-v8": "4.0.8",
+    "@vitest/coverage-v8": "4.0.14",
     "ioredis": "5.8.2",
-    "unplugin-swc": "1.5.8",
-    "vitest": "4.0.8"
+    "unplugin-swc": "1.5.9",
+    "vitest": "4.0.14"
   }
 }

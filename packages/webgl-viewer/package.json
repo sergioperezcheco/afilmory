@@ -18,12 +18,12 @@
     "react": ">=19.0.0"
   },
   "devDependencies": {
-    "@types/react": "19.2.3",
+    "@types/react": "19.2.7",
     "nbump": "2.1.8",
     "react": "19.2.0",
-    "tsdown": "0.16.3",
+    "tsdown": "0.16.7",
     "unplugin-dts": "1.0.0-beta.6",
-    "vite": "7.2.2"
+    "vite": "7.2.4"
   },
   "publishConfig": {
     "access": "public",
