@@ -1,40 +1,43 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
 import i18next from 'i18next'
-import { atom, Provider as JotaiProvider, useSetAtom } from 'jotai'
+import type { PrimitiveAtom } from 'jotai'
+import { atom } from 'jotai'
 import type { PropsWithChildren } from 'react'
 import { createContext, use, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 
 import type { Comment } from '~/lib/api/comments'
 import { commentsApi } from '~/lib/api/comments'
+import { jotaiStore } from '~/lib/jotai'
 
 const PAGE_SIZE = 20
 
 export interface CommentsAtoms {
-  commentsAtom: ReturnType<typeof atom<Comment[]>>
-  newCommentAtom: ReturnType<typeof atom<string>>
-  replyToAtom: ReturnType<typeof atom<Comment | null>>
-  statusAtom: ReturnType<
-    typeof atom<{
-      isLoading: boolean
-      isError: boolean
-      isLoadingMore: boolean
-      nextCursor: string | null
-    }>
-  >
+  commentsAtom: PrimitiveAtom<Comment[]>
+  newCommentAtom: PrimitiveAtom<string>
+  replyToAtom: PrimitiveAtom<Comment | null>
+  statusAtom: PrimitiveAtom<{
+    isLoading: boolean
+    isError: boolean
+    isLoadingMore: boolean
+    nextCursor: string | null
+  }>
+}
 
-  submitAtom: ReturnType<typeof atom<null, [string], Promise<void>>>
-  loadMoreAtom: ReturnType<typeof atom<null, [], Promise<void>>>
-  toggleReactionAtom: ReturnType<typeof atom<null, [{ comment: Comment; reaction?: string }], Promise<void>>>
+export interface CommentsMethods {
+  submit: (content: string) => Promise<void>
+  loadMore: () => Promise<void>
+  toggleReaction: (params: { comment: Comment; reaction?: string }) => Promise<void>
 }
 
 export interface CommentsContextValue {
   atoms: CommentsAtoms
+  methods: CommentsMethods
 }
 
 const CommentsContext = createContext<CommentsContextValue | null>(null)
 
-function createCommentsAtoms(photoId: string): CommentsAtoms {
+function createCommentsContext(photoId: string): { atoms: CommentsAtoms; methods: CommentsMethods } {
   const commentsAtom = atom<Comment[]>([])
   const newCommentAtom = atom<string>('')
   const replyToAtom = atom<Comment | null>(null)
@@ -45,18 +48,25 @@ function createCommentsAtoms(photoId: string): CommentsAtoms {
     nextCursor: null as string | null,
   })
 
-  const submitAtom = atom(null, async (get, set, content: string) => {
-    const replyTo = get(replyToAtom)
+  const atoms: CommentsAtoms = {
+    commentsAtom,
+    newCommentAtom,
+    replyToAtom,
+    statusAtom,
+  }
+
+  const submit = async (content: string) => {
+    const replyTo = jotaiStore.get(replyToAtom)
     try {
-      set(statusAtom, (prev) => ({ ...prev, isLoading: true }))
+      jotaiStore.set(statusAtom, (prev) => ({ ...prev, isLoading: true }))
       const comment = await commentsApi.create({
         photoId,
         content: content.trim(),
         parentId: replyTo?.id ?? null,
       })
-      set(commentsAtom, (prev) => [comment, ...prev])
-      set(newCommentAtom, '')
-      set(replyToAtom, null)
+      jotaiStore.set(commentsAtom, (prev) => [comment, ...prev])
+      jotaiStore.set(newCommentAtom, '')
+      jotaiStore.set(replyToAtom, null)
       toast.success(i18next.t('comments.posted'))
     } catch (error: any) {
       if (error?.status === 401) {
@@ -65,70 +75,65 @@ function createCommentsAtoms(photoId: string): CommentsAtoms {
         toast.error(i18next.t('comments.postFailed'))
       }
     } finally {
-      set(statusAtom, (prev) => ({ ...prev, isLoading: false }))
+      jotaiStore.set(statusAtom, (prev) => ({ ...prev, isLoading: false }))
     }
-  })
+  }
 
-  const loadMoreAtom = atom(null, async (get, set) => {
-    const status = get(statusAtom)
+  const loadMore = async () => {
+    const status = jotaiStore.get(statusAtom)
     if (status.isLoadingMore || !status.nextCursor) return
-    set(statusAtom, { ...status, isLoadingMore: true })
+    jotaiStore.set(statusAtom, { ...status, isLoadingMore: true })
     try {
       const result = await commentsApi.list(photoId, status.nextCursor, PAGE_SIZE)
-      set(commentsAtom, (prev) => [...prev, ...result.items])
-      set(statusAtom, (prev) => ({ ...prev, nextCursor: result.nextCursor, isLoadingMore: false }))
+      jotaiStore.set(commentsAtom, (prev) => [...prev, ...result.items])
+      jotaiStore.set(statusAtom, (prev) => ({ ...prev, nextCursor: result.nextCursor, isLoadingMore: false }))
     } catch {
-      set(statusAtom, (prev) => ({ ...prev, isLoadingMore: false, isError: true }))
+      jotaiStore.set(statusAtom, (prev) => ({ ...prev, isLoadingMore: false, isError: true }))
     }
-  })
+  }
 
-  const toggleReactionAtom = atom(
-    null,
-    async (get, set, { comment, reaction = 'like' }: { comment: Comment; reaction?: string }) => {
-      const isActive = comment.viewerReactions.includes(reaction)
-      set(commentsAtom, (prev) =>
+  const toggleReaction = async ({ comment, reaction = 'like' }: { comment: Comment; reaction?: string }) => {
+    const isActive = comment.viewerReactions.includes(reaction)
+    jotaiStore.set(commentsAtom, (prev) =>
+      prev.map((item) => {
+        if (item.id !== comment.id) return item
+        const counts = { ...item.reactionCounts }
+        counts[reaction] = Math.max(0, (counts[reaction] ?? 0) + (isActive ? -1 : 1))
+        const viewerReactions = isActive
+          ? item.viewerReactions.filter((r) => r !== reaction)
+          : [...item.viewerReactions, reaction]
+        return { ...item, reactionCounts: counts, viewerReactions }
+      }),
+    )
+    try {
+      await commentsApi.toggleReaction({ commentId: comment.id, reaction })
+    } catch (error: any) {
+      jotaiStore.set(commentsAtom, (prev) =>
         prev.map((item) => {
           if (item.id !== comment.id) return item
           const counts = { ...item.reactionCounts }
-          counts[reaction] = Math.max(0, (counts[reaction] ?? 0) + (isActive ? -1 : 1))
+          counts[reaction] = Math.max(0, (counts[reaction] ?? 0) + (isActive ? 1 : -1))
           const viewerReactions = isActive
-            ? item.viewerReactions.filter((r) => r !== reaction)
-            : [...item.viewerReactions, reaction]
+            ? [...item.viewerReactions, reaction]
+            : item.viewerReactions.filter((r) => r !== reaction)
           return { ...item, reactionCounts: counts, viewerReactions }
         }),
       )
-      try {
-        await commentsApi.toggleReaction({ commentId: comment.id, reaction })
-      } catch (error: any) {
-        set(commentsAtom, (prev) =>
-          prev.map((item) => {
-            if (item.id !== comment.id) return item
-            const counts = { ...item.reactionCounts }
-            counts[reaction] = Math.max(0, (counts[reaction] ?? 0) + (isActive ? 1 : -1))
-            const viewerReactions = isActive
-              ? [...item.viewerReactions, reaction]
-              : item.viewerReactions.filter((r) => r !== reaction)
-            return { ...item, reactionCounts: counts, viewerReactions }
-          }),
-        )
-        if (error?.status === 401) {
-          toast.error(i18next.t('comments.loginRequired'))
-        } else {
-          toast.error(i18next.t('comments.reactionFailed'))
-        }
+      if (error?.status === 401) {
+        toast.error(i18next.t('comments.loginRequired'))
+      } else {
+        toast.error(i18next.t('comments.reactionFailed'))
       }
-    },
-  )
-
-  return {
-    commentsAtom,
-    newCommentAtom,
-    replyToAtom,
-    statusAtom,
-    submitAtom,
-    loadMoreAtom,
-    toggleReactionAtom,
+    }
   }
+
+  const methods: CommentsMethods = {
+    submit,
+    loadMore,
+    toggleReaction,
+  }
+
+  return { atoms, methods }
 }
 
 export function useCommentsContext(): CommentsContextValue {
@@ -140,9 +145,8 @@ export function useCommentsContext(): CommentsContextValue {
 }
 
 export function CommentsProvider({ photoId, children }: PropsWithChildren<{ photoId: string }>) {
-  const atoms = useMemo(() => createCommentsAtoms(photoId), [photoId])
-  const setComments = useSetAtom(atoms.commentsAtom)
-  const setStatus = useSetAtom(atoms.statusAtom)
+  const ctxValue = useMemo(() => createCommentsContext(photoId), [photoId])
+  const { atoms } = ctxValue
 
   const commentsQuery = useInfiniteQuery({
     queryKey: ['comments', photoId],
@@ -153,32 +157,29 @@ export function CommentsProvider({ photoId, children }: PropsWithChildren<{ phot
   })
 
   useEffect(() => {
-    setStatus((prev) => ({
+    jotaiStore.set(atoms.statusAtom, (prev) => ({
       ...prev,
       isLoading: commentsQuery.isLoading,
       isLoadingMore: commentsQuery.isFetchingNextPage,
     }))
-  }, [commentsQuery.isFetchingNextPage, commentsQuery.isLoading, setStatus])
+  }, [atoms.statusAtom, commentsQuery.isFetchingNextPage, commentsQuery.isLoading])
 
   useEffect(() => {
     if (commentsQuery.data) {
-      setComments(commentsQuery.data.pages.flatMap((page) => page.items))
+      jotaiStore.set(
+        atoms.commentsAtom,
+        commentsQuery.data.pages.flatMap((page) => page.items),
+      )
       const nextCursor = commentsQuery.data.pages.at(-1)?.nextCursor ?? null
-      setStatus((prev) => ({ ...prev, isLoading: false, isError: false, nextCursor }))
+      jotaiStore.set(atoms.statusAtom, (prev) => ({ ...prev, isLoading: false, isError: false, nextCursor }))
     }
-  }, [commentsQuery.data, setComments, setStatus])
+  }, [atoms.commentsAtom, atoms.statusAtom, commentsQuery.data])
 
   useEffect(() => {
     if (commentsQuery.isError) {
-      setStatus((prev) => ({ ...prev, isLoading: false, isError: true }))
+      jotaiStore.set(atoms.statusAtom, (prev) => ({ ...prev, isLoading: false, isError: true }))
     }
-  }, [commentsQuery.isError, setStatus])
+  }, [atoms.statusAtom, commentsQuery.isError])
 
-  const value = useMemo<CommentsContextValue>(() => ({ atoms }), [atoms])
-
-  return (
-    <JotaiProvider>
-      <CommentsContext value={value}>{children}</CommentsContext>
-    </JotaiProvider>
-  )
+  return <CommentsContext value={ctxValue}>{children}</CommentsContext>
 }

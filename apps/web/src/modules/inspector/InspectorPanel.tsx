@@ -1,5 +1,5 @@
 import type { PickedExif } from '@afilmory/builder'
-import { SegmentGroup, SegmentItem } from '@afilmory/ui'
+import { MobileTabGroup, MobileTabItem, SegmentGroup, SegmentItem } from '@afilmory/ui'
 import { Spring } from '@afilmory/utils'
 import { m } from 'motion/react'
 import type { FC } from 'react'
@@ -30,7 +30,7 @@ export const InspectorPanel: FC<{
     <m.div
       className={`${
         isMobile
-          ? 'inspector-panel-mobile fixed right-0 bottom-0 left-0 z-10 max-h-[60vh] w-full rounded-t-2xl backdrop-blur-2xl'
+          ? 'inspector-panel-mobile fixed right-0 bottom-0 left-0 z-10 h-[60vh] w-full rounded-t-lg backdrop-blur-2xl'
           : 'relative w-80 shrink-0 backdrop-blur-2xl'
       } border-accent/20 flex flex-col text-white`}
       initial={{
@@ -49,7 +49,7 @@ export const InspectorPanel: FC<{
       style={{
         pointerEvents: visible ? 'auto' : 'none',
         backgroundImage:
-          'linear-gradient(to bottom right, rgba(var(--color-materialMedium)), rgba(var(--color-materialThick)), transparent)',
+          'linear-gradient(to bottom right, rgba(var(--color-materialMedium)), rgba(var(--color-materialThick)))',
         boxShadow:
           '0 8px 32px color-mix(in srgb, var(--color-accent) 8%, transparent), 0 4px 16px color-mix(in srgb, var(--color-accent) 6%, transparent), 0 2px 8px rgba(0, 0, 0, 0.1)',
       }}
@@ -64,51 +64,77 @@ export const InspectorPanel: FC<{
       />
 
       {/* Header with tabs and actions */}
-      <div className="relative z-50 mt-2 shrink-0">
-        <div className="relative mb-3 flex items-center justify-center">
-          {/* Tab switcher */}
-          <SegmentGroup
-            value={activeTab}
-            onValueChanged={(value) => setActiveTab(value as Tab)}
-            className="border-accent/20 bg-material-ultra-thick rounded text-white"
-          >
-            <SegmentItem
-              value="info"
-              activeBgClassName="bg-accent/20"
-              className="text-white/60 hover:text-white/80 data-[state=active]:text-white"
-              label={
-                <div className="flex items-center">
-                  <i className="i-mingcute-information-line mr-1.5" />
-                  {t('inspector.tab.info')}
-                </div>
-              }
-            />
-            {showSocialFeatures && (
+      <div className="relative z-50 shrink-0">
+        {isMobile ? (
+          /* Mobile: MobileTabGroup */
+          <div className="relative">
+            <MobileTabGroup value={activeTab} onValueChanged={(value) => setActiveTab(value as Tab)} className="mr-12">
+              <MobileTabItem
+                value="info"
+                label={
+                  <div className="flex items-center">
+                    <i className="i-mingcute-information-line mr-1.5 text-base" />
+                    {t('inspector.tab.info')}
+                  </div>
+                }
+              />
+              {showSocialFeatures && (
+                <MobileTabItem
+                  value="comments"
+                  label={
+                    <div className="flex items-center">
+                      <i className="i-mingcute-comment-line mr-1.5 text-base" />
+                      {t('inspector.tab.comments')}
+                    </div>
+                  }
+                />
+              )}
+            </MobileTabGroup>
+            {onClose && (
+              <button
+                type="button"
+                className="hover:bg-accent/10 absolute top-4 right-4 flex size-9 items-center justify-center rounded-lg text-white/80 transition-colors hover:text-white"
+                onClick={onClose}
+              >
+                <i className="i-mingcute-close-line text-lg" />
+              </button>
+            )}
+          </div>
+        ) : (
+          /* Desktop: Segment control */
+          <div className="relative mt-2 mb-3 flex items-center justify-center">
+            <SegmentGroup
+              value={activeTab}
+              onValueChanged={(value) => setActiveTab(value as Tab)}
+              className="border-accent/20 bg-material-ultra-thick rounded text-white"
+            >
               <SegmentItem
-                value="comments"
+                value="info"
                 activeBgClassName="bg-accent/20"
                 className="text-white/60 hover:text-white/80 data-[state=active]:text-white"
                 label={
                   <div className="flex items-center">
-                    <i className="i-mingcute-comment-line mr-1.5" />
-                    {t('inspector.tab.comments')}
+                    <i className="i-mingcute-information-line mr-1.5" />
+                    {t('inspector.tab.info')}
                   </div>
                 }
               />
-            )}
-          </SegmentGroup>
-
-          {/* Close button (mobile only) */}
-          {isMobile && onClose && (
-            <button
-              type="button"
-              className="glassmorphic-btn border-accent/20 absolute right-0 flex size-8 items-center justify-center rounded-full border text-white/70 duration-200 hover:text-white"
-              onClick={onClose}
-            >
-              <i className="i-mingcute-close-line text-sm" />
-            </button>
-          )}
-        </div>
+              {showSocialFeatures && (
+                <SegmentItem
+                  value="comments"
+                  activeBgClassName="bg-accent/20"
+                  className="text-white/60 hover:text-white/80 data-[state=active]:text-white"
+                  label={
+                    <div className="flex items-center">
+                      <i className="i-mingcute-comment-line mr-1.5" />
+                      {t('inspector.tab.comments')}
+                    </div>
+                  }
+                />
+              )}
+            </SegmentGroup>
+          </div>
+        )}
       </div>
 
       {/* Content area */}

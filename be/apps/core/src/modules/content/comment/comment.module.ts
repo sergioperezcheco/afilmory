@@ -2,7 +2,7 @@ import { Module } from '@afilmory/framework'
 import { DatabaseModule } from 'core/database/database.module'
 
 import { CommentController } from './comment.controller'
-import { AllowAllCommentModerationHook,COMMENT_MODERATION_HOOK } from './comment.moderation'
+import { AllowAllCommentModerationHook, COMMENT_MODERATION_HOOK } from './comment.moderation'
 import { CommentService } from './comment.service'
 
 @Module({

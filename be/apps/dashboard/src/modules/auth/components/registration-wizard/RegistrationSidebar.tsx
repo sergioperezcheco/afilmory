@@ -1,7 +1,7 @@
 import { cx } from '@afilmory/utils'
 import type { FC } from 'react'
 
-import { progressForStep,REGISTRATION_STEPS } from './constants'
+import { progressForStep, REGISTRATION_STEPS } from './constants'
 
 type SidebarProps = {
   currentStepIndex: number

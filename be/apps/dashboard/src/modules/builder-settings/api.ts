@@ -1,6 +1,6 @@
 import { coreApi } from '~/lib/api-client'
 
-import type { BuilderSettingsPayload,BuilderSettingUiSchemaResponse } from './types'
+import type { BuilderSettingsPayload, BuilderSettingUiSchemaResponse } from './types'
 
 const BUILDER_SETTINGS_ENDPOINT = '/builder/settings'
 

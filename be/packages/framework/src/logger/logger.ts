@@ -30,7 +30,7 @@ export type LoggerContextProvider = () => LoggerContextValue | LoggerContextValu
 
 const globalContextProviders = new Set<LoggerContextProvider>()
 
-function toContextStrings (value: LoggerContextValue | LoggerContextValue[] | undefined): string[] {
+function toContextStrings(value: LoggerContextValue | LoggerContextValue[] | undefined): string[] {
   if (Array.isArray(value)) {
     return value.flatMap((item) => (typeof item === 'string' && item ? [item] : []))
   }
@@ -38,7 +38,7 @@ function toContextStrings (value: LoggerContextValue | LoggerContextValue[] | un
   return typeof value === 'string' && value ? [value] : []
 }
 
-function invokeContextProvider (provider: LoggerContextProvider): string[] {
+function invokeContextProvider(provider: LoggerContextProvider): string[] {
   try {
     return toContextStrings(provider())
   } catch {

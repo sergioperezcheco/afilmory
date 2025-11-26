@@ -1,11 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import type {LinkSocialAccountPayload, SocialAccountRecord, UnlinkSocialAccountPayload} from '../api/socialAccounts';
-import {
-  fetchSocialAccounts,
-  linkSocialAccount,
-  unlinkSocialAccount
-} from '../api/socialAccounts'
+import type { LinkSocialAccountPayload, SocialAccountRecord, UnlinkSocialAccountPayload } from '../api/socialAccounts'
+import { fetchSocialAccounts, linkSocialAccount, unlinkSocialAccount } from '../api/socialAccounts'
 
 export const SOCIAL_ACCOUNTS_QUERY_KEY = ['auth', 'social-accounts'] as const
 

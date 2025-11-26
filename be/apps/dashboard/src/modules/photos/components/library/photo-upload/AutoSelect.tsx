@@ -3,7 +3,6 @@ import { clsxm } from '@afilmory/utils'
 import type { KeyboardEvent } from 'react'
 import { useMemo, useState } from 'react'
 
-
 type AutoSelectOption = {
   label: string
   value: string

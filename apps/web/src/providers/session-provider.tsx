@@ -5,14 +5,12 @@ import { useEffect } from 'react'
 import { sessionUserAtom } from '~/atoms/session'
 import { authApi } from '~/lib/api/auth'
 
-export function SessionProvider({ children }: { children: React.ReactNode }) {
+export function SessionProvider() {
   const setSessionUser = useSetAtom(sessionUserAtom)
 
   const sessionQuery = useQuery({
     queryKey: ['session'],
     queryFn: authApi.getSession,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
   })
 
   useEffect(() => {
@@ -24,5 +22,5 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   }, [sessionQuery.data, setSessionUser])
 
-  return <>{children}</>
+  return null
 }

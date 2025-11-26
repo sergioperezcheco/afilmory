@@ -1,5 +1,5 @@
-import type {AnalysisResponse} from '@afilmory/sdk';
-import { AnalysisDtoSchema,  ReactionDtoSchema } from '@afilmory/sdk'
+import type { AnalysisResponse } from '@afilmory/sdk'
+import { AnalysisDtoSchema, ReactionDtoSchema } from '@afilmory/sdk'
 import { eq } from 'drizzle-orm'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'

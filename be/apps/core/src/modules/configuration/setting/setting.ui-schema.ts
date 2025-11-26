@@ -1,18 +1,18 @@
-import type {UiSchemaTFunction} from 'core/modules/ui/ui-schema/ui-schema.i18n';
-import { identityUiSchemaT  } from 'core/modules/ui/ui-schema/ui-schema.i18n'
+import type { UiSchemaTFunction } from 'core/modules/ui/ui-schema/ui-schema.i18n'
+import { identityUiSchemaT } from 'core/modules/ui/ui-schema/ui-schema.i18n'
 import type { UiNode } from 'core/modules/ui/ui-schema/ui-schema.type'
 
 import type { SettingKeyType, SettingUiSchema } from './setting.type'
 
 export const SETTING_UI_SCHEMA_VERSION = '1.3.0'
 
-export function createSettingUiSchema (t: UiSchemaTFunction): SettingUiSchema {
+export function createSettingUiSchema(t: UiSchemaTFunction): SettingUiSchema {
   return {
-  version: SETTING_UI_SCHEMA_VERSION,
-  title: t('settings.title'),
-  description: t('settings.description'),
-  sections: [],
-}
+    version: SETTING_UI_SCHEMA_VERSION,
+    title: t('settings.title'),
+    description: t('settings.description'),
+    sections: [],
+  }
 }
 
 const SETTING_SCHEMA_FOR_KEYS = createSettingUiSchema(identityUiSchemaT)

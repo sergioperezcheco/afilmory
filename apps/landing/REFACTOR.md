@@ -26,14 +26,13 @@
 import { shadows, radius, blur, glassCard } from '~/lib/design-tokens'
 
 // 统一的玻璃态卡片
-<div className={clsxm(glassCard.floating, radius.lg, shadows.medium)}>
-  ...
-</div>
+;<div className={clsxm(glassCard.floating, radius.lg, shadows.medium)}>...</div>
 ```
 
 ## 🧩 组件拆分
 
 ### 原文件结构
+
 - `page.tsx`：680 行单文件，包含所有组件和数据
 
 ### 新文件结构
@@ -53,6 +52,7 @@ components/landing/
 ```
 
 ### 主页面（`page.tsx`）
+
 - **重构前**：680 行
 - **重构后**：29 行（仅组合导入的组件）
 
@@ -61,14 +61,16 @@ components/landing/
 ### 1. 颜色系统规范化
 
 **重构前**：
+
 ```tsx
 // ❌ 硬编码颜色和不一致的阴影
-className="shadow-[0_20px_60px_rgba(0,0,0,0.35)] bg-white/5"
-className="shadow-[0_25px_80px_rgba(0,0,0,0.35)]"
-className="shadow-[0_30px_80px_rgba(0,0,0,0.35)]"
+className = 'shadow-[0_20px_60px_rgba(0,0,0,0.35)] bg-white/5'
+className = 'shadow-[0_25px_80px_rgba(0,0,0,0.35)]'
+className = 'shadow-[0_30px_80px_rgba(0,0,0,0.35)]'
 ```
 
 **重构后**：
+
 ```tsx
 // ✅ 使用统一的设计 token
 className={shadows.heavy}
@@ -78,6 +80,7 @@ className={shadows.medium}
 ### 2. 阴影层级统一
 
 所有阴影现在遵循 5 个标准层级：
+
 - `subtle`：轻微阴影（卡片悬停）
 - `light`：轻度阴影（普通卡片）
 - `medium`：中度阴影（浮动面板）
@@ -89,6 +92,7 @@ className={shadows.medium}
 创建了 4 个通用卡片组件：
 
 #### `Card`（基础卡片）
+
 ```tsx
 <Card variant="floating" size="md" hoverable>
   自定义内容
@@ -96,6 +100,7 @@ className={shadows.medium}
 ```
 
 #### `IconCard`（带图标的卡片）
+
 ```tsx
 <IconCard
   icon="i-lucide-aperture"
@@ -106,6 +111,7 @@ className={shadows.medium}
 ```
 
 #### `FeatureCard`（功能卡片）
+
 ```tsx
 <FeatureCard
   icon="i-lucide-cpu"
@@ -116,17 +122,15 @@ className={shadows.medium}
 ```
 
 #### `MetricCard`（指标卡片）
+
 ```tsx
-<MetricCard
-  label="WebGL 渲染"
-  value="60fps"
-  detail="平移 · 缩放 · HDR"
-/>
+<MetricCard label="WebGL 渲染" value="60fps" detail="平移 · 缩放 · HDR" />
 ```
 
 ## 📦 组件拆分原则
 
 遵循项目规则：
+
 1. ✅ **每个文件 < 500 行**
 2. ✅ **避免重复代码**（提取通用 Card 组件）
 3. ✅ **单一职责**（每个 Section 组件只负责一个区块）
@@ -168,6 +172,7 @@ import { NewSection } from '~/components/landing'
 ### Glassmorphic Depth 原则
 
 所有组件都遵循「玻璃态深度设计」：
+
 1. **分层透明度**：`bg-background/60` → `bg-background/80`
 2. **模糊背景**：`backdrop-blur-xl` → `backdrop-blur-3xl`
 3. **精细边框**：`border border-white/10`
@@ -176,13 +181,13 @@ import { NewSection } from '~/components/landing'
 
 ## 📊 重构效果
 
-| 指标 | 重构前 | 重构后 | 改进 |
-|------|--------|--------|------|
-| 主文件行数 | 680 行 | 29 行 | ↓ 95.7% |
-| 组件文件数 | 1 个 | 10 个 | 模块化 |
-| 重复样式 | ~15 处 | 0 处 | 消除重复 |
-| 阴影定义 | 12+ 种 | 5 种 | 统一规范 |
-| 可维护性 | ⭐⭐ | ⭐⭐⭐⭐⭐ | 显著提升 |
+| 指标       | 重构前 | 重构后     | 改进     |
+| ---------- | ------ | ---------- | -------- |
+| 主文件行数 | 680 行 | 29 行      | ↓ 95.7%  |
+| 组件文件数 | 1 个   | 10 个      | 模块化   |
+| 重复样式   | ~15 处 | 0 处       | 消除重复 |
+| 阴影定义   | 12+ 种 | 5 种       | 统一规范 |
+| 可维护性   | ⭐⭐   | ⭐⭐⭐⭐⭐ | 显著提升 |
 
 ## 🚀 后续优化建议
 
@@ -196,4 +201,3 @@ import { NewSection } from '~/components/landing'
 - 设计系统规范：`apps/landing/AGENTS.md`
 - Pastel Palette 文档：`@pastel-palette/tailwindcss`
 - 项目整体架构：根目录 `README.md`
-

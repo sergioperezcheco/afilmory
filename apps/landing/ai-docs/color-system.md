@@ -3,11 +3,13 @@
 > A color library and sample site for design systems, offering three styles: Regular, Kawaii, and High Contrast. It covers application-level colors (accent/primary/secondary), semantic colors (text, background, border, separator, link, disabled), material transparency layers (ultraThick→opaque), and grayscale gradients (gray1→gray10). All colors are defined using OKLCH and offer light/dark variants to maintain consistent perceptual contrast and accessibility across themes and light/dark modes.
 
 This project includes a color package (`packages/colors`) and a demo/documentation site (`docs`). Colors are created using the `createColor` tool to ensure consistency and composability. Styles:
+
 - Regular: Universal, neutral default style suitable for most products
 - Kawaii: Softer, cute-style light-color contrast controls
 - High Contrast: Extreme contrast for enhanced readability and accessibility (WCAG-friendly)
 
 Color Organization Structure and Recommendations:
+
 - Application Colors: `accent`, `primary`, `secondary` (for branding, primary actions, secondary buttons, etc.)
 - Semantic Colors: `text`, `placeholderText`, `border`, `separator`, `link`, `disabledControl`, `disabledText`; plus `background` and `fill` with progressive hierarchy (primary→quinary / primary→quaternary)
 - Material Colors: `ultraThick`, `thick`, `medium`, `thin`, `ultraThin`, `opaque` (same color with varying opacity levels, used for frosted glass, card overlays, etc.)
@@ -65,13 +67,13 @@ Color Organization Structure and Recommendations:
   - Primary Colors: blue, pink, purple, green, orange, yellow, sky, red, brown, gray, neutral, black, white, teal, cyan, indigo, violet, lime, emerald, amber, rose, slate, zinc
   - Application Level (regularApplicationColors): accent (brand accents), primary (primary interactions), secondary (secondary interaction)
   - Semantic Level (regularElementColors / regularBackgroundColors / regularFillColors / regularMaterialColors):
-    - text.*, border.*, separator.primary, link.primary, disabled*, background.* (primary→quinary), fill.* (primary→quaternary), material.* (ultraThick→opaque)
+    - text._, border._, separator.primary, link.primary, disabled*, background.* (primary→quinary), fill._ (primary→quaternary), material._ (ultraThick→opaque)
 - Grayscale (regularGrayScale): gray1→gray10 supporting neutral surfaces and contrast levels
 
 - Kawaii Style:
 - Distinctive features: More refined text/border contrast control on light color palettes; softer background/fill gradations
   - Application Level (kawaiiApplicationColors): accent/primary/secondary follow Regular roles, with softer hue and luminance
-  - Semantic Level (kawaiiElementColors, etc.): links lean toward soft blue/cyan; disabled* aligns with overall color temperature
+  - Semantic Level (kawaiiElementColors, etc.): links lean toward soft blue/cyan; disabled\* aligns with overall color temperature
   - Grayscale (kawaiiGrayScale): consistent gradation with Regular, adapted to overall style
 
 - High Contrast Style:
@@ -83,10 +85,9 @@ Color Organization Structure and Recommendations:
 ## Docs
 
 - [Demo Documentation Site](https://pastel.innei.dev/): Interactive preview of all themes and colors
- 
+
 ## Optional
 
 - [packages/colors source code (theme definitions)](https://github.com/Innei/pastel/tree/main/packages/colors/src): Theme and color definitions, including Regular/Kawaii/High Contrast
 - [docs site source code](https://github.com/Innei/pastel/tree/main/docs): Example and preview site
 - [Tailwind Theme Export (packages/tailwindcss-colors)](https://github.com/Innei/pastel/tree/main/packages/tailwindcss-colors): Generator and theme CSS export
-

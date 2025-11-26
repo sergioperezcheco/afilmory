@@ -36,8 +36,8 @@ const storageSignQuerySchema = z
   })
   .refine(
     (data) => {
-      const {objectKey} = data
-      const {key} = data
+      const { objectKey } = data
+      const { key } = data
       return !!(objectKey || key)
     },
     {

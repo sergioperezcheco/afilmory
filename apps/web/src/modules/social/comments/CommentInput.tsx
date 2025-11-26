@@ -1,10 +1,12 @@
+import { useAtomValue } from 'jotai'
 import { useTranslation } from 'react-i18next'
 
+import { sessionUserAtom } from '~/atoms/session'
 import type { Comment } from '~/lib/api/comments'
 
 interface CommentInputProps {
   isMobile: boolean
-  sessionUser: { name?: string | null; id?: string | null } | null
+
   replyTo: Comment | null
   setReplyTo: (comment: Comment | null) => void
   newComment: string
@@ -14,7 +16,7 @@ interface CommentInputProps {
 
 export const CommentInput = ({
   isMobile,
-  sessionUser,
+
   replyTo,
   setReplyTo,
   newComment,
@@ -22,6 +24,8 @@ export const CommentInput = ({
   onSubmit,
 }: CommentInputProps) => {
   const { t } = useTranslation()
+
+  const sessionUser = useAtomValue(sessionUserAtom)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

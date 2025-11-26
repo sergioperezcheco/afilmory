@@ -1,5 +1,5 @@
 import { ScrollArea } from '@afilmory/ui'
-import { useAtom, useSetAtom } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 import type { FC } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -25,15 +25,12 @@ export const CommentsPanel: FC<{ photoId: string; visible?: boolean }> = ({ phot
 const CommentsContent: FC = () => {
   const { t, i18n } = useTranslation()
   const isMobile = useMobile()
-  const { atoms } = useCommentsContext()
+  const { atoms, methods } = useCommentsContext()
   const [comments] = useAtom(atoms.commentsAtom)
   const [status] = useAtom(atoms.statusAtom)
   const [replyTo, setReplyTo] = useAtom(atoms.replyToAtom)
   const [newComment, setNewComment] = useAtom(atoms.newCommentAtom)
-  const [sessionUser] = useAtom(sessionUserAtom)
-  const submit = useSetAtom(atoms.submitAtom)
-  const loadMore = useSetAtom(atoms.loadMoreAtom)
-  const toggleReaction = useSetAtom(atoms.toggleReactionAtom)
+  const sessionUser = useAtomValue(sessionUserAtom)
 
   const authorName = (comment: Comment) => {
     if (sessionUser?.id && comment.userId === sessionUser.id) {
@@ -74,7 +71,7 @@ const CommentsContent: FC = () => {
                 parent={comment.parentId ? (comments.find((c) => c.id === comment.parentId) ?? null) : null}
                 reacted={comment.viewerReactions.includes('like')}
                 onReply={() => setReplyTo(comment)}
-                onToggleReaction={() => toggleReaction({ comment })}
+                onToggleReaction={() => methods.toggleReaction({ comment })}
                 authorName={authorName}
                 locale={i18n.language || 'en'}
               />
@@ -84,7 +81,7 @@ const CommentsContent: FC = () => {
           {status.nextCursor && (
             <button
               type="button"
-              onClick={() => loadMore()}
+              onClick={() => methods.loadMore()}
               disabled={status.isLoadingMore}
               className="glassmorphic-btn border-accent/30 hover:border-accent/60 mx-auto flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm text-white/80 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -97,12 +94,11 @@ const CommentsContent: FC = () => {
 
       <CommentInput
         isMobile={isMobile}
-        sessionUser={sessionUser}
         replyTo={replyTo}
         setReplyTo={setReplyTo}
         newComment={newComment}
         setNewComment={setNewComment}
-        onSubmit={(content) => submit(content)}
+        onSubmit={(content) => methods.submit(content)}
       />
     </div>
   )

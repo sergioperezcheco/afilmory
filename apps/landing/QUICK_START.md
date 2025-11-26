@@ -13,12 +13,8 @@ import { Card } from './Card'
 export const MySection = () => (
   <section className={spacing.content}>
     <header className={spacing.tight}>
-      <p className={clsxm(typography.label, 'text-text-secondary')}>
-        标签
-      </p>
-      <h2 className={clsxm(typography.h1, 'text-white')}>
-        区块标题
-      </h2>
+      <p className={clsxm(typography.label, 'text-text-secondary')}>标签</p>
+      <h2 className={clsxm(typography.h1, 'text-white')}>区块标题</h2>
     </header>
 
     <Card variant="floating" size="lg">
@@ -120,8 +116,8 @@ const features = [
 ```tsx
 import { FeatureCard } from '~/components/landing'
 
-<div className="grid gap-6 lg:grid-cols-2">
-  {featureGroups.map(group => (
+;<div className="grid gap-6 lg:grid-cols-2">
+  {featureGroups.map((group) => (
     <FeatureCard
       key={group.title}
       icon={group.icon}
@@ -136,17 +132,17 @@ import { FeatureCard } from '~/components/landing'
 ### Pattern 3: Hero 渐变背景
 
 ```tsx
-<div className={clsxm(
-  'relative overflow-hidden',
-  radius['3xl'],
-  shadows.heavy,
-  'bg-linear-to-br from-accent/40 via-purple-600/40 to-slate-900/70',
-  'p-10 text-white'
-)}>
+<div
+  className={clsxm(
+    'relative overflow-hidden',
+    radius['3xl'],
+    shadows.heavy,
+    'bg-linear-to-br from-accent/40 via-purple-600/40 to-slate-900/70',
+    'p-10 text-white',
+  )}
+>
   <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.25),_transparent_55%)] opacity-80" />
-  <div className="relative space-y-6">
-    内容
-  </div>
+  <div className="relative space-y-6">内容</div>
 </div>
 ```
 
@@ -155,7 +151,7 @@ import { FeatureCard } from '~/components/landing'
 ```tsx
 import { MetricCard } from '~/components/landing'
 
-<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+;<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
   <MetricCard label="用户" value="10k+" detail="活跃用户" />
   <MetricCard label="性能" value="99.9%" detail="可用性" />
   {/* 更多指标 */}
@@ -168,14 +164,14 @@ import { MetricCard } from '~/components/landing'
 
 ```tsx
 import {
-  shadows,      // 阴影
-  radius,       // 圆角
-  blur,         // 模糊
-  glassCard,    // 玻璃态卡片
-  typography,   // 文字层级
-  spacing,      // 间距
-  iconBox,      // 图标容器
-  transition,   // 过渡动画
+  shadows, // 阴影
+  radius, // 圆角
+  blur, // 模糊
+  glassCard, // 玻璃态卡片
+  typography, // 文字层级
+  spacing, // 间距
+  iconBox, // 图标容器
+  transition, // 过渡动画
 } from '~/lib/design-tokens'
 ```
 
@@ -245,9 +241,7 @@ export const glassCard = {
 **A**: Pastel Palette 已自动支持。在根元素添加 `data-color-mode` 属性：
 
 ```tsx
-<html data-color-mode="dark">
-  {/* 所有颜色 token 自动切换 */}
-</html>
+<html data-color-mode="dark">{/* 所有颜色 token 自动切换 */}</html>
 ```
 
 ## 🔗 相关文档
@@ -267,4 +261,3 @@ export const glassCard = {
 ---
 
 Happy Coding! 🚀
-

@@ -30,8 +30,8 @@ Use inline styles with `color-mix()` only for complex gradients or shadows that 
 <div
   className="rounded-2xl border border-accent/20 backdrop-blur-2xl"
   style={{
-    backgroundImage: "linear-gradient(...)",
-    boxShadow: "0 8px 32px color-mix(...)",
+    backgroundImage: 'linear-gradient(...)',
+    boxShadow: '0 8px 32px color-mix(...)',
   }}
 >
   {/* Inner glow and content */}
