@@ -1,4 +1,4 @@
-import { commentReactions, comments, photoAssets } from '@afilmory/db'
+import { authUsers, commentReactions, comments, photoAssets } from '@afilmory/db'
 import { HttpContext } from '@afilmory/framework'
 import { getClientIp } from 'core/context/http-context.helper'
 import { DbAccessor } from 'core/database/database.provider'
@@ -23,6 +23,12 @@ export interface CommentViewModel {
   updatedAt: string
 }
 
+export interface UserViewModel {
+  id: string
+  name: string
+  image: string | null
+}
+
 interface ViewerContext {
   userId: string | null
   role?: string
@@ -40,7 +46,14 @@ export class CommentService {
     @inject(COMMENT_MODERATION_HOOK) private readonly moderationHook: CommentModerationHook,
   ) {}
 
-  async createComment(dto: CreateCommentDto, context: Context): Promise<{ item: CommentResponseItem }> {
+  async createComment(
+    dto: CreateCommentDto,
+    context: Context,
+  ): Promise<{
+    comments: CommentResponseItem[]
+    relations: Record<string, CommentResponseItem>
+    users: Record<string, UserViewModel>
+  }> {
     const tenant = requireTenantContext()
     const auth = this.requireAuth()
     const db = this.dbAccessor.get()
@@ -87,12 +100,67 @@ export class CommentService {
       viewerReactions: [],
     })
 
-    return { item }
+    // Fetch relations (parent comment if exists)
+    const relations: Record<string, CommentResponseItem> = {}
+    if (parent) {
+      const [fullParent] = await db
+        .select({
+          id: comments.id,
+          photoId: comments.photoId,
+          parentId: comments.parentId,
+          userId: comments.userId,
+          content: comments.content,
+          status: comments.status,
+          createdAt: comments.createdAt,
+          updatedAt: comments.updatedAt,
+        })
+        .from(comments)
+        .where(eq(comments.id, parent.id))
+        .limit(1)
+
+      if (fullParent) {
+        const parentReactions = await this.fetchReactionAggregations(tenant.tenant.id, [parent.id], auth.userId)
+        relations[parent.id] = this.toResponse({
+          ...fullParent,
+          reactionCounts: parentReactions.counts.get(parent.id) ?? {},
+          viewerReactions: parentReactions.viewer.get(parent.id) ?? [],
+        })
+      }
+    }
+
+    // Fetch user info
+    const users: Record<string, UserViewModel> = {}
+    const userIds = [auth.userId, ...Object.values(relations).map((r) => r.userId)].filter(Boolean)
+    const uniqueUserIds = [...new Set(userIds)]
+
+    if (uniqueUserIds.length > 0) {
+      const userRows = await db
+        .select({
+          id: authUsers.id,
+          name: authUsers.name,
+          image: authUsers.image,
+        })
+        .from(authUsers)
+        .where(inArray(authUsers.id, uniqueUserIds))
+
+      for (const user of userRows) {
+        users[user.id] = {
+          id: user.id,
+          name: user.name,
+          image: user.image,
+        }
+      }
+    }
+
+    return { comments: [item], relations, users }
   }
 
-  async listComments(
-    query: ListCommentsQueryDto,
-  ): Promise<{ items: CommentResponseItem[]; nextCursor: string | null }> {
+  async listComments(query: ListCommentsQueryDto): Promise<{
+    comments: CommentResponseItem[]
+    relations: Record<string, CommentResponseItem>
+    users: Record<string, UserViewModel>
+    nextCursor: string | null
+  }> {
     const tenant = requireTenantContext()
     const viewer = this.getViewer()
     const db = this.dbAccessor.get()
@@ -151,14 +219,79 @@ export class CommentService {
 
     const nextCursor = hasMore && items.length > 0 ? items.at(-1)!.id : null
 
+    const commentItems = items.map((item) =>
+      this.toResponse({
+        ...item,
+        reactionCounts: reactions.counts.get(item.id) ?? {},
+        viewerReactions: reactions.viewer.get(item.id) ?? [],
+      }),
+    )
+
+    // Build relations map (parentId -> parent comment)
+    const relations: Record<string, CommentResponseItem> = {}
+    const parentIds = [...new Set(items.filter((item) => item.parentId).map((item) => item.parentId!))]
+
+    if (parentIds.length > 0) {
+      const parentRows = await db
+        .select({
+          id: comments.id,
+          photoId: comments.photoId,
+          parentId: comments.parentId,
+          userId: comments.userId,
+          content: comments.content,
+          status: comments.status,
+          createdAt: comments.createdAt,
+          updatedAt: comments.updatedAt,
+        })
+        .from(comments)
+        .where(
+          and(eq(comments.tenantId, tenant.tenant.id), inArray(comments.id, parentIds), isNull(comments.deletedAt)),
+        )
+
+      const parentReactions = await this.fetchReactionAggregations(
+        tenant.tenant.id,
+        parentRows.map((p) => p.id),
+        viewer.userId,
+      )
+
+      for (const parent of parentRows) {
+        relations[parent.id] = this.toResponse({
+          ...parent,
+          reactionCounts: parentReactions.counts.get(parent.id) ?? {},
+          viewerReactions: parentReactions.viewer.get(parent.id) ?? [],
+        })
+      }
+    }
+
+    // Build users map (userId -> user)
+    const users: Record<string, UserViewModel> = {}
+    const allUserIds = [
+      ...new Set([...items.map((item) => item.userId), ...Object.values(relations).map((r) => r.userId)]),
+    ]
+
+    if (allUserIds.length > 0) {
+      const userRows = await db
+        .select({
+          id: authUsers.id,
+          name: authUsers.name,
+          image: authUsers.image,
+        })
+        .from(authUsers)
+        .where(inArray(authUsers.id, allUserIds))
+
+      for (const user of userRows) {
+        users[user.id] = {
+          id: user.id,
+          name: user.name,
+          image: user.image,
+        }
+      }
+    }
+
     return {
-      items: items.map((item) =>
-        this.toResponse({
-          ...item,
-          reactionCounts: reactions.counts.get(item.id) ?? {},
-          viewerReactions: reactions.viewer.get(item.id) ?? [],
-        }),
-      ),
+      comments: commentItems,
+      relations,
+      users,
       nextCursor,
     }
   }

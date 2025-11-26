@@ -28,9 +28,23 @@ export interface Comment {
   viewerReactions: string[]
 }
 
+export interface CommentUser {
+  id: string
+  name: string
+  image: string | null
+}
+
 export interface CommentListResult {
-  items: Comment[]
+  comments: Comment[]
+  relations: Record<string, Comment>
+  users: Record<string, CommentUser>
   nextCursor: string | null
+}
+
+export interface CreateCommentResult {
+  comments: Comment[]
+  relations: Record<string, Comment>
+  users: Record<string, CommentUser>
 }
 
 export interface CreateCommentInput {
@@ -42,6 +56,25 @@ export interface CreateCommentInput {
 export interface ToggleReactionInput {
   commentId: string
   reaction: string
+}
+
+interface CommentUserDto {
+  id: string
+  name: string
+  image: string | null
+}
+
+interface CommentListResponseDto {
+  comments: CommentDto[]
+  relations: Record<string, CommentDto>
+  users: Record<string, CommentUserDto>
+  next_cursor: string | null
+}
+
+interface CreateCommentResponseDto {
+  comments: CommentDto[]
+  relations: Record<string, CommentDto>
+  users: Record<string, CommentUserDto>
 }
 
 function mapComment(dto: CommentDto): Comment {
@@ -59,6 +92,14 @@ function mapComment(dto: CommentDto): Comment {
   }
 }
 
+function mapRelations(relations: Record<string, CommentDto>): Record<string, Comment> {
+  const result: Record<string, Comment> = {}
+  for (const [key, dto] of Object.entries(relations)) {
+    result[key] = mapComment(dto)
+  }
+  return result
+}
+
 export const commentsApi = {
   async list(photoId: string, cursor?: string | null, limit = 20): Promise<CommentListResult> {
     const params = new URLSearchParams({
@@ -67,17 +108,17 @@ export const commentsApi = {
     })
     if (cursor) params.set('cursor', cursor)
 
-    const data = await apiFetch<{ items: CommentDto[]; next_cursor: string | null }>(
-      `/api/comments?${params.toString()}`,
-    )
+    const data = await apiFetch<CommentListResponseDto>(`/api/comments?${params.toString()}`)
     return {
-      items: data.items.map(mapComment),
+      comments: data.comments.map(mapComment),
+      relations: mapRelations(data.relations),
+      users: data.users,
       nextCursor: data.next_cursor ?? null,
     }
   },
 
-  async create(input: CreateCommentInput): Promise<Comment> {
-    const data = await apiFetch<{ item: CommentDto }>('/api/comments', {
+  async create(input: CreateCommentInput): Promise<CreateCommentResult> {
+    const data = await apiFetch<CreateCommentResponseDto>('/api/comments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -86,7 +127,11 @@ export const commentsApi = {
         parentId: input.parentId ?? undefined,
       }),
     })
-    return mapComment(data.item)
+    return {
+      comments: data.comments.map(mapComment),
+      relations: mapRelations(data.relations),
+      users: data.users,
+    }
   },
 
   async toggleReaction(input: ToggleReactionInput): Promise<Comment> {

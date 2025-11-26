@@ -4,14 +4,13 @@ import type { FC } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { sessionUserAtom } from '~/atoms/session'
-import { useMobile } from '~/hooks/useMobile'
-import type { Comment } from '~/lib/api/comments'
 
-import { CommentCard } from './CommentCard'
+import { CommentItem } from './CommentCard'
 import { CommentInput } from './CommentInput'
 import { CommentsProvider, useCommentsContext } from './context'
 import { EmptyState } from './EmptyState'
 import { ErrorBox } from './ErrorBox'
+import { SignInPanel } from './SignInPanel'
 import { SkeletonList } from './SkeletonList'
 
 export const CommentsPanel: FC<{ photoId: string; visible?: boolean }> = ({ photoId }) => {
@@ -24,29 +23,19 @@ export const CommentsPanel: FC<{ photoId: string; visible?: boolean }> = ({ phot
 
 const CommentsContent: FC = () => {
   const { t, i18n } = useTranslation()
-  const isMobile = useMobile()
+
   const { atoms, methods } = useCommentsContext()
-  const [comments] = useAtom(atoms.commentsAtom)
+  const comments = useAtomValue(atoms.commentsAtom)
+
   const [status] = useAtom(atoms.statusAtom)
-  const [replyTo, setReplyTo] = useAtom(atoms.replyToAtom)
-  const [newComment, setNewComment] = useAtom(atoms.newCommentAtom)
+  const lastSubmittedCommentId = useAtomValue(atoms.lastSubmittedCommentIdAtom)
+
   const sessionUser = useAtomValue(sessionUserAtom)
-
-  const authorName = (comment: Comment) => {
-    if (sessionUser?.id && comment.userId === sessionUser.id) {
-      return t('comments.you')
-    }
-    if (comment.userId) {
-      return t('comments.user', { id: comment.userId.slice(-6) })
-    }
-    return t('comments.anonymous')
-  }
-
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col">
       <div className="flex items-center justify-between px-4 pt-3 pb-2 text-sm text-white/70">
-        <div className="flex items-center gap-2">
-          <i className="i-mingcute-comment-line" />
+        <div className="ml-4 flex items-center gap-2">
+          <i className="i-mingcute-comment-line mr-2" />
           <span>{t('inspector.tab.comments')}</span>
           {comments.length > 0 && (
             <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/70">{comments.length}</span>
@@ -65,14 +54,11 @@ const CommentsContent: FC = () => {
             <EmptyState />
           ) : (
             comments.map((comment) => (
-              <CommentCard
+              <CommentItem
                 key={comment.id}
                 comment={comment}
-                parent={comment.parentId ? (comments.find((c) => c.id === comment.parentId) ?? null) : null}
                 reacted={comment.viewerReactions.includes('like')}
-                onReply={() => setReplyTo(comment)}
-                onToggleReaction={() => methods.toggleReaction({ comment })}
-                authorName={authorName}
+                isNew={comment.id === lastSubmittedCommentId}
                 locale={i18n.language || 'en'}
               />
             ))
@@ -92,14 +78,7 @@ const CommentsContent: FC = () => {
         </div>
       </ScrollArea>
 
-      <CommentInput
-        isMobile={isMobile}
-        replyTo={replyTo}
-        setReplyTo={setReplyTo}
-        newComment={newComment}
-        setNewComment={setNewComment}
-        onSubmit={(content) => methods.submit(content)}
-      />
+      {sessionUser ? <CommentInput /> : <SignInPanel />}
     </div>
   )
 }
