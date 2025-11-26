@@ -37,7 +37,7 @@ export interface StaticAssetServiceOptions {
 export interface ResolvedStaticAsset {
   absolutePath: string
   relativePath: string
-  stats: Stats
+  stats: Pick<Stats, 'mtime' | 'size'>
 }
 
 export abstract class StaticAssetService {
@@ -394,7 +394,7 @@ export abstract class StaticAssetService {
     return new Response(transformed, { headers, status: 200 })
   }
 
-  private async transformIndexHtml(html: string, file: ResolvedStaticAsset): Promise<string> {
+  public async transformIndexHtml(html: string, file: ResolvedStaticAsset): Promise<string> {
     try {
       const document = DOM_PARSER.parseFromString(html, 'text/html') as unknown as StaticAssetDocument
       await this.decorateDocument(document, file)
