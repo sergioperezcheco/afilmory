@@ -93,7 +93,7 @@ const SelectContent = ({
       className={cn(
         'bg-material-medium backdrop-blur-background text-text z-[60] max-h-96 min-w-32 overflow-hidden rounded border p-1',
         'shadow-context-menu',
-        'motion-scale-in-75 motion-duration-150 text-body lg:animate-none',
+        'motion-scale-in-75 motion-duration-150 text-sm lg:animate-none',
         className,
       )}
       position={position}
