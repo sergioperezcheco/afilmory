@@ -80,6 +80,13 @@ export class ManagedStorageProvider implements StorageProvider {
     await this.upstream.deleteFile(targetKey)
   }
 
+  async deleteFolder(prefix: string): Promise<void> {
+    const normalizedPrefix = normalizePath(prefix)
+    const targetPrefix =
+      this.needsManualPrefix && !normalizedPrefix ? this.effectivePrefix : this.prepareKeyForUpstream(normalizedPrefix)
+    await this.upstream.deleteFolder(targetPrefix)
+  }
+
   async uploadFile(key: string, data: Buffer, options?: StorageUploadOptions): Promise<StorageObject> {
     const targetKey = this.prepareKeyForUpstream(key)
     const uploaded = await this.upstream.uploadFile(targetKey, data, options)

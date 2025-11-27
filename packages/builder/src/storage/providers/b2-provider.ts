@@ -562,6 +562,19 @@ export class B2StorageProvider implements StorageProvider {
     })
   }
 
+  async deleteFolder(prefix: string): Promise<void> {
+    const normalizedPrefix = sanitizePath(prefix)
+    const targetPrefix = normalizedPrefix ? `${normalizedPrefix}/` : ''
+    const allFiles = await this.listAllFiles()
+    const keysToDelete = allFiles
+      .map((file) => file.key)
+      .filter((key): key is string => Boolean(key) && (!targetPrefix || key.startsWith(targetPrefix)))
+
+    for (const key of keysToDelete) {
+      await this.deleteFile(key)
+    }
+  }
+
   async uploadFile(key: string, data: Buffer, options?: StorageUploadOptions): Promise<StorageObject> {
     const remoteKey = this.toRemoteKey(key)
     const file = await this.uploadInternal(remoteKey, data, options)

@@ -112,7 +112,7 @@ export class PhotoStorageService {
     }
   }
 
-  private mapProviderToStorageConfig(provider: BuilderStorageProvider): StorageConfig {
+  mapProviderToStorageConfig(provider: BuilderStorageProvider): StorageConfig {
     this.assertProviderSupported(provider.type)
 
     const config = provider.config ?? {}

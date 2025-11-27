@@ -80,6 +80,12 @@ export interface StorageProvider {
   deleteFile: (key: string) => Promise<void>
 
   /**
+   * 删除指定前缀下的所有文件（通常对应一个“目录”）
+   * @param prefix 需要删除的目录或前缀（不需要以 / 开头）
+   */
+  deleteFolder: (prefix: string) => Promise<void>
+
+  /**
    * 向存储上传文件
    * @param key 文件的键值/路径
    * @param data 文件数据
