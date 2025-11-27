@@ -308,12 +308,17 @@ export class AuthController {
     const { headers } = context.req.raw
     const tenantContext = getTenantContext()
 
+    // Only allow auto sign-up on real tenants (not placeholder)
+    // On placeholder tenant, users must explicitly register first
+    const isRealTenant = tenantContext && !isPlaceholderTenantContext(tenantContext)
+    const shouldAllowSignUp = body.requestSignUp ?? isRealTenant
+
     const auth = await this.auth.getAuth()
     const response = await auth.api.signInSocial({
       body: {
         ...body,
         provider,
-        requestSignUp: body.requestSignUp ?? Boolean(tenantContext),
+        requestSignUp: shouldAllowSignUp,
       },
       headers,
       asResponse: true,

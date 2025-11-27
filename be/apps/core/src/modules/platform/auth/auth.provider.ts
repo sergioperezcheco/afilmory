@@ -7,7 +7,6 @@ import { createLogger, HttpContext } from '@afilmory/framework'
 import type { FlatSubscriptionEvent } from '@creem_io/better-auth'
 import { creem } from '@creem_io/better-auth'
 import { betterAuth } from 'better-auth'
-import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { admin } from 'better-auth/plugins'
 import { DrizzleProvider } from 'core/database/database.provider'
@@ -25,6 +24,7 @@ import { TenantService } from '../tenant/tenant.service'
 import { extractTenantSlugFromHost } from '../tenant/tenant-host.utils'
 import type { AuthModuleOptions, SocialProviderOptions, SocialProvidersConfig } from './auth.config'
 import { AuthConfig } from './auth.config'
+import { tenantAwareDrizzleAdapter } from './tenant-aware-adapter'
 
 export type BetterAuthInstance = ReturnType<typeof betterAuth>
 
@@ -221,17 +221,27 @@ export class AuthProvider implements OnModuleInit {
     )
     const cookiePrefix = this.buildCookiePrefix(tenantSlug)
 
+    // Use tenant-aware adapter for multi-tenant user/account isolation
+    // This ensures that user lookups (by email) and account lookups (by provider)
+    // are scoped to the current tenant, allowing the same email/social account
+    // to exist as different users in different tenants
+    const getTenantId = () => this.resolveTenantIdFromContext()
+
     return betterAuth({
-      database: drizzleAdapter(db, {
-        provider: 'pg',
-        schema: {
-          user: authUsers,
-          session: authSessions,
-          account: authAccounts,
-          verification: authVerifications,
-          subscription: creemSubscriptions,
+      database: tenantAwareDrizzleAdapter(
+        db,
+        {
+          provider: 'pg',
+          schema: {
+            user: authUsers,
+            session: authSessions,
+            account: authAccounts,
+            verification: authVerifications,
+            subscription: creemSubscriptions,
+          },
         },
-      }),
+        getTenantId,
+      ),
       socialProviders: socialProviders as any,
       emailAndPassword: { enabled: true },
       trustedOrigins: await this.buildTrustedOrigins(),

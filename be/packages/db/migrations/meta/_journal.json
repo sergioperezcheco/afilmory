@@ -78,6 +78,13 @@
       "when": 1764154685207,
       "tag": "0010_wise_doorman",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1764226846630,
+      "tag": "0011_omniscient_wraith",
+      "breakpoints": true
     }
   ]
 }
