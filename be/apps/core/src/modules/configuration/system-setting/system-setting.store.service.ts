@@ -1,4 +1,5 @@
 import { systemSettings } from '@afilmory/db'
+import { EventEmitterService } from '@afilmory/framework'
 import { DbAccessor } from 'core/database/database.provider'
 import { eq, inArray } from 'drizzle-orm'
 import { injectable } from 'tsyringe'
@@ -12,7 +13,10 @@ import type {
 
 @injectable()
 export class SystemSettingStore {
-  constructor(private readonly dbAccessor: DbAccessor) {}
+  constructor(
+    private readonly dbAccessor: DbAccessor,
+    private readonly eventService: EventEmitterService,
+  ) {}
 
   async get(key: SystemSettingKey): Promise<SystemSettingRecord['value']> {
     const record = await this.find(key)
@@ -73,6 +77,8 @@ export class SystemSettingStore {
           updatedAt: now,
         },
       })
+
+    this.eventService.emit('system.setting.updated', { key, value: String(value) })
   }
 
   async setMany(entries: readonly SystemSettingEntryInput[]): Promise<void> {

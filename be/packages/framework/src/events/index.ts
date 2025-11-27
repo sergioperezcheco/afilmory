@@ -50,9 +50,8 @@ export interface EventModuleAsyncOptions {
   inject?: Constructor[]
 }
 
-export interface Events {
-  a: ''
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface Events {}
 
 type EventNameInterface = keyof Events | (string & {})
 
