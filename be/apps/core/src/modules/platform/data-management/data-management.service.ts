@@ -66,8 +66,6 @@ export class DataManagementService {
 
     await this.deleteManagedStorageSpace(tenantId)
 
-    return
-
     if (!tenantSlug) {
       throw new BizException(ErrorCode.COMMON_BAD_REQUEST, {
         message: '当前租户缺少 slug，无法删除账户。',

@@ -344,6 +344,7 @@ export class S3StorageProvider implements StorageProvider {
     const targetPrefix = basePrefix && !basePrefix.endsWith('/') ? `${basePrefix}/` : basePrefix
 
     const objects = await this.listObjects(listPrefix)
+
     const keysToDelete = objects
       .map((obj) => obj.key)
       .filter((key): key is string => {

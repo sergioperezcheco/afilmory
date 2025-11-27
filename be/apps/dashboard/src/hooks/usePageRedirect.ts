@@ -95,12 +95,6 @@ export function usePageRedirect() {
   }, [sessionQuery.data, setAuthUser])
 
   useEffect(() => {
-    return () => {
-      queryClient.cancelQueries({ queryKey: AUTH_SESSION_QUERY_KEY })
-    }
-  }, [queryClient])
-
-  useEffect(() => {
     const matchedTenantNotFound = [sessionQuery.error].some((error) => {
       const code = extractBizErrorCode(error)
       return code !== null && TENANT_MISSING_ERROR_CODES.has(code)
