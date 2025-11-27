@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
 import { PUBLIC_ROUTES } from '~/constants/routes'
@@ -34,13 +34,19 @@ export function useRequireStorageProvider({ session, isLoading }: UseRequireStor
     (storageProvidersQuery.data?.providers.length ?? 0) === 0 &&
     !storageProvidersQuery.isFetching
 
+  const navigateOnceRef = useRef(false)
   useEffect(() => {
+    if (navigateOnceRef.current) {
+      return
+    }
     if (!needsSetup) {
       return
     }
     if (pathname === STORAGE_SETUP_PATH) {
       return
     }
+
+    navigateOnceRef.current = true
 
     navigate(STORAGE_SETUP_PATH, { replace: true })
   }, [navigate, needsSetup, pathname])

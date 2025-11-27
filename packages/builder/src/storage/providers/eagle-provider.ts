@@ -188,6 +188,10 @@ export class EagleStorageProvider implements StorageProvider {
     throw new Error('EagleStorageProvider: 当前不支持删除文件操作')
   }
 
+  async deleteFolder(_prefix: string): Promise<void> {
+    throw new Error('EagleStorageProvider: 当前不支持删除目录操作')
+  }
+
   async uploadFile(_key: string, _data: Buffer, _options?: StorageUploadOptions): Promise<StorageObject> {
     throw new Error('EagleStorageProvider: 当前不支持上传文件操作')
   }

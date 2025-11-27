@@ -97,6 +97,22 @@ export class InMemoryDebugStorageProvider implements StorageProvider {
     this.files.delete(key)
   }
 
+  async deleteFolder(prefix: string): Promise<void> {
+    const normalizedPrefix = this.normalizeKey(prefix)
+    const prefixWithSlash = normalizedPrefix ? `${normalizedPrefix}/` : null
+
+    if (!normalizedPrefix) {
+      this.files.clear()
+      return
+    }
+
+    for (const key of this.files.keys()) {
+      if (key === normalizedPrefix || (prefixWithSlash && key.startsWith(prefixWithSlash))) {
+        this.files.delete(key)
+      }
+    }
+  }
+
   async uploadFile(key: string, data: Buffer, _options?: StorageUploadOptions): Promise<StorageObject> {
     const normalizedKey = this.normalizeKey(key)
     const metadata: StorageObject = {

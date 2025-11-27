@@ -325,15 +325,22 @@ export function StorageProvidersManager() {
             transition={Spring.presets.smooth}
             className="col-span-full"
           >
-            <div className="bg-background-tertiary border-fill-tertiary flex flex-col items-center justify-center gap-3 rounded-lg border p-8 text-center">
+            <LinearBorderPanel className="bg-background-tertiary border-fill-tertiary flex flex-col items-center justify-center gap-3 p-8 text-center">
               <div className="space-y-1">
                 <p className="text-text-secondary text-sm">{t(storageProvidersI18nKeys.empty.title)}</p>
                 <p className="text-text-tertiary text-xs">{t(storageProvidersI18nKeys.empty.description)}</p>
               </div>
-              <Button type="button" size="sm" variant="primary" onClick={handleAddProvider} disabled={!schemaReady}>
+              <Button
+                type="button"
+                size="sm"
+                className="mt-4"
+                variant="primary"
+                onClick={handleAddProvider}
+                disabled={!schemaReady}
+              >
                 {t(storageProvidersI18nKeys.empty.action)}
               </Button>
-            </div>
+            </LinearBorderPanel>
           </m.div>
         )}
       </m.div>

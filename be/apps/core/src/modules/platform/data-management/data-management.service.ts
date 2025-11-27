@@ -1,7 +1,21 @@
-import { authSessions, authUsers, photoAssets, reactions, settings, tenants } from '@afilmory/db'
+import type { ManagedStorageConfig, RemoteStorageConfig } from '@afilmory/builder'
+import { StorageManager } from '@afilmory/builder/storage/index.js'
+import {
+  authSessions,
+  authUsers,
+  commentReactions,
+  comments,
+  photoAssets,
+  reactions,
+  settings,
+  tenantDomains,
+  tenants,
+} from '@afilmory/db'
 import { EventEmitterService } from '@afilmory/framework'
 import { DbAccessor } from 'core/database/database.provider'
 import { BizException, ErrorCode } from 'core/errors'
+import { SystemSettingService } from 'core/modules/configuration/system-setting/system-setting.service'
+import { PhotoStorageService } from 'core/modules/content/photo/storage/photo-storage.service'
 import { BILLING_USAGE_EVENT } from 'core/modules/platform/billing/billing.constants'
 import { BillingUsageService } from 'core/modules/platform/billing/billing-usage.service'
 import { PLACEHOLDER_TENANT_SLUG, ROOT_TENANT_SLUG } from 'core/modules/platform/tenant/tenant.constants'
@@ -15,6 +29,8 @@ export class DataManagementService {
     private readonly dbAccessor: DbAccessor,
     private readonly eventEmitter: EventEmitterService,
     private readonly billingUsageService: BillingUsageService,
+    private readonly systemSettingService: SystemSettingService,
+    private readonly photoStorageService: PhotoStorageService,
   ) {}
 
   async clearPhotoAssetRecords(): Promise<{ deleted: number }> {
@@ -48,6 +64,8 @@ export class DataManagementService {
     const tenantId = tenant.tenant.id
     const tenantSlug = tenant.tenant.slug
 
+    await this.deleteManagedStorageSpace(tenantId)
+
     if (!tenantSlug) {
       throw new BizException(ErrorCode.COMMON_BAD_REQUEST, {
         message: '当前租户缺少 slug，无法删除账户。',
@@ -60,20 +78,55 @@ export class DataManagementService {
       })
     }
 
+    await this.deleteManagedStorageSpace(tenantId)
+
     const db = this.dbAccessor.get()
 
     await db.transaction(async (tx) => {
       await tx.delete(photoAssets).where(eq(photoAssets.tenantId, tenantId))
       await tx.delete(reactions).where(eq(reactions.tenantId, tenantId))
       await tx.delete(settings).where(eq(settings.tenantId, tenantId))
+      await tx.delete(tenantDomains).where(eq(tenantDomains.tenantId, tenantId))
+
+      await tx.delete(comments).where(eq(comments.tenantId, tenantId))
+      await tx.delete(commentReactions).where(eq(commentReactions.tenantId, tenantId))
 
       await tx.delete(authSessions).where(eq(authSessions.tenantId, tenantId))
-      await tx.update(authUsers).set({ tenantId: null, role: 'user' }).where(eq(authUsers.tenantId, tenantId))
+      // await tx.delete(authAccounts).where(eq(authAccounts.tenantId, tenantId))
+      await tx.delete(authUsers).where(eq(authUsers.tenantId, tenantId))
       await tx.delete(tenants).where(eq(tenants.id, tenantId))
     })
 
     return {
       deletedTenantId: tenantId,
+    }
+  }
+
+  private async deleteManagedStorageSpace(tenantId: string): Promise<void> {
+    const managedConfig = await this.buildManagedStorageConfig(tenantId)
+
+    if (!managedConfig) {
+      return
+    }
+
+    const storageManager = new StorageManager(managedConfig)
+    await storageManager.deleteFolder('')
+  }
+
+  private async buildManagedStorageConfig(tenantId: string): Promise<ManagedStorageConfig | null> {
+    const provider = await this.systemSettingService.getManagedStorageProvider()
+    if (!provider) {
+      return null
+    }
+
+    const upstream = this.photoStorageService.mapProviderToStorageConfig(provider)
+
+    return {
+      provider: 'managed',
+      tenantId,
+      providerKey: provider.id,
+      basePrefix: null,
+      upstream: upstream as RemoteStorageConfig,
     }
   }
 }

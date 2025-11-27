@@ -1,4 +1,4 @@
-import { createLogger } from '@afilmory/framework'
+import { createLogger, EventEmitterService } from '@afilmory/framework'
 import { SystemSettingService } from 'core/modules/configuration/system-setting/system-setting.service'
 import { injectable } from 'tsyringe'
 
@@ -7,7 +7,16 @@ export class StaticAssetHostService {
   private readonly logger = createLogger('StaticAssetHostService')
   private readonly cache = new Map<string, string | null>()
 
-  constructor(private readonly systemSettingService: SystemSettingService) {}
+  constructor(
+    private readonly systemSettingService: SystemSettingService,
+    private readonly eventService: EventEmitterService,
+  ) {
+    eventService.on('system.setting.updated', ({ key }) => {
+      if (key === 'system.domain.base') {
+        this.cache.clear()
+      }
+    })
+  }
 
   async getStaticAssetHost(requestHost?: string | null): Promise<string | null> {
     const cacheKey = this.buildCacheKey(requestHost)

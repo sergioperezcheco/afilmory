@@ -110,6 +110,10 @@ export class StorageManager {
     await this.provider.deleteFile(key)
   }
 
+  async deleteFolder(prefix: string): Promise<void> {
+    await this.provider.deleteFolder(prefix)
+  }
+
   async uploadFile(key: string, data: Buffer, options?: StorageUploadOptions): Promise<StorageObject> {
     const bytes = data?.byteLength ?? 0
     const progressHandler = this.createProgressPipeline(options?.onProgress)

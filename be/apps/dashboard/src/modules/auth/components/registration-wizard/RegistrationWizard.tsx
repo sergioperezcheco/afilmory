@@ -201,6 +201,8 @@ export const RegistrationWizard: FC = () => {
       if (!isEmptyValue(current)) {
         return false
       }
+      // The `form.setFieldValue` cannot bypass the `.` key accessor, requiring two operations.
+      form.state.values[key] = value
       form.setFieldValue(key, () => value)
       return true
     }
