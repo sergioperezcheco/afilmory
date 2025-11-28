@@ -261,6 +261,14 @@ export class AuthProvider implements OnModuleInit {
       trustedOrigins: await this.buildTrustedOrigins(),
       session: {
         freshAge: 0,
+        additionalFields: {
+          tenantId: { type: 'string', input: false },
+        },
+      },
+      account: {
+        additionalFields: {
+          tenantId: { type: 'string', input: false },
+        },
       },
 
       user: {

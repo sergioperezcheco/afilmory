@@ -33,6 +33,7 @@ export function tenantAwareDrizzleAdapter(
     const wrapFindOne = (originalFindOne: AdapterInstance['findOne']) => {
       return async (params: FindOneParams) => {
         const enhancedParams = await injectTenantFilterForFindOne(params, getTenantId)
+
         return originalFindOne(enhancedParams)
       }
     }
