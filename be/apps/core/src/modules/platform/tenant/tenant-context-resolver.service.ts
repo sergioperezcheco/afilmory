@@ -73,6 +73,14 @@ export class TenantContextResolver {
     }
 
     if (!derivedSlug) {
+      // Allow resolving tenant from query param for OAuth callbacks (Gateway flow)
+      const querySlug = context.req.query('tenantSlug')
+      if (querySlug && context.req.path.startsWith('/api/auth/callback/')) {
+        derivedSlug = querySlug
+      }
+    }
+
+    if (!derivedSlug) {
       derivedSlug = host ? (extractTenantSlugFromHost(host, baseDomain) ?? undefined) : undefined
     }
     if (!derivedSlug && this.isRootTenantPath(context.req.path)) {

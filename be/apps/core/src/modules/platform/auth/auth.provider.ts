@@ -225,7 +225,21 @@ export class AuthProvider implements OnModuleInit {
     // This ensures that user lookups (by email) and account lookups (by provider)
     // are scoped to the current tenant, allowing the same email/social account
     // to exist as different users in different tenants
-    const getTenantId = () => this.resolveTenantIdFromContext()
+    const getTenantId = async () => {
+      const tenantId = this.resolveTenantIdFromContext()
+      if (tenantId) {
+        return tenantId
+      }
+      if (tenantSlug) {
+        try {
+          const tenant = await this.tenantService.getBySlug(tenantSlug)
+          return tenant.tenant.id
+        } catch {
+          return null
+        }
+      }
+      return null
+    }
 
     return betterAuth({
       database: tenantAwareDrizzleAdapter(
@@ -248,6 +262,7 @@ export class AuthProvider implements OnModuleInit {
       session: {
         freshAge: 0,
       },
+
       user: {
         additionalFields: {
           tenantId: { type: 'string', input: false },

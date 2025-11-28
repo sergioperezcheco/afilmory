@@ -23,7 +23,7 @@ type FindManyParams = Parameters<Adapter['findMany']>[0]
 export function tenantAwareDrizzleAdapter(
   db: DrizzleDb,
   config: DrizzleAdapterConfig,
-  getTenantId: () => string | null,
+  getTenantId: () => string | null | Promise<string | null>,
 ): ReturnType<typeof drizzleAdapter> {
   const baseAdapterFactory = drizzleAdapter(db, config)
 
@@ -32,14 +32,14 @@ export function tenantAwareDrizzleAdapter(
 
     const wrapFindOne = (originalFindOne: AdapterInstance['findOne']) => {
       return async (params: FindOneParams) => {
-        const enhancedParams = injectTenantFilterForFindOne(params, getTenantId)
+        const enhancedParams = await injectTenantFilterForFindOne(params, getTenantId)
         return originalFindOne(enhancedParams)
       }
     }
 
     const wrapFindMany = (originalFindMany: AdapterInstance['findMany']) => {
       return async (params: FindManyParams) => {
-        const enhancedParams = injectTenantFilterForFindMany(params, getTenantId)
+        const enhancedParams = await injectTenantFilterForFindMany(params, getTenantId)
         return originalFindMany(enhancedParams)
       }
     }
@@ -56,14 +56,17 @@ export function tenantAwareDrizzleAdapter(
  * Injects tenantId filter into the where clause for user and account models.
  * Only applies to models that need tenant isolation.
  */
-function injectTenantFilterForFindOne(params: FindOneParams, getTenantId: () => string | null): FindOneParams {
-  const modelsRequiringTenantFilter = ['user', 'account']
+async function injectTenantFilterForFindOne(
+  params: FindOneParams,
+  getTenantId: () => string | null | Promise<string | null>,
+): Promise<FindOneParams> {
+  const modelsRequiringTenantFilter = ['user', 'account', 'session']
 
   if (!modelsRequiringTenantFilter.includes(params.model)) {
     return params
   }
 
-  const tenantId = getTenantId()
+  const tenantId = await getTenantId()
   if (!tenantId) {
     // No tenant context - allow query to proceed without tenant filter
     // This handles edge cases like initial setup or cross-tenant admin operations
@@ -91,14 +94,17 @@ function injectTenantFilterForFindOne(params: FindOneParams, getTenantId: () => 
   }
 }
 
-function injectTenantFilterForFindMany(params: FindManyParams, getTenantId: () => string | null): FindManyParams {
-  const modelsRequiringTenantFilter = ['user', 'account']
+async function injectTenantFilterForFindMany(
+  params: FindManyParams,
+  getTenantId: () => string | null | Promise<string | null>,
+): Promise<FindManyParams> {
+  const modelsRequiringTenantFilter = ['user', 'account', 'session']
 
   if (!modelsRequiringTenantFilter.includes(params.model)) {
     return params
   }
 
-  const tenantId = getTenantId()
+  const tenantId = await getTenantId()
   if (!tenantId) {
     return params
   }
