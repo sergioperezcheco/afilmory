@@ -1,5 +1,6 @@
-import { Thumbhash } from '@afilmory/ui'
+import { HoverCard, HoverCardContent, HoverCardTrigger, Thumbhash } from '@afilmory/ui'
 import { clsxm, Spring } from '@afilmory/utils'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { m } from 'motion/react'
 import type { FC } from 'react'
 import { useEffect, useRef, useState } from 'react'
@@ -13,16 +14,6 @@ const thumbnailSize = {
   desktop: 64,
 }
 
-const thumbnailGapSize = {
-  mobile: 8,
-  desktop: 12,
-}
-
-const thumbnailPaddingSize = {
-  mobile: 12,
-  desktop: 16,
-}
-
 export const GalleryThumbnail: FC<{
   currentIndex: number
   photos: PhotoManifest[]
@@ -34,6 +25,20 @@ export const GalleryThumbnail: FC<{
   const isMobile = useMobile()
 
   const [scrollContainerWidth, setScrollContainerWidth] = useState(0)
+
+  const thumbnailHeight = isMobile ? thumbnailSize.mobile : thumbnailSize.desktop
+
+  // Use tanstack virtual for horizontal scrolling
+  const virtualizer = useVirtualizer({
+    count: photos.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: (index) => {
+      const photo = photos[index]
+      return photo ? thumbnailHeight * photo.aspectRatio : thumbnailHeight
+    },
+    horizontal: true,
+    overscan: 5,
+  })
 
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current
@@ -52,22 +57,47 @@ export const GalleryThumbnail: FC<{
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current
 
-    if (scrollContainer) {
-      const containerWidth = scrollContainerWidth
-      const thumbnailLeft =
-        currentIndex * (isMobile ? thumbnailSize.mobile : thumbnailSize.desktop) +
-        (isMobile ? thumbnailGapSize.mobile : thumbnailGapSize.desktop) * currentIndex
-      const thumbnailWidth = isMobile ? thumbnailSize.mobile : thumbnailSize.desktop
+    if (scrollContainer && photos.length > 0 && currentIndex < photos.length) {
+      // Use virtualizer's actual measurements for accurate positioning
+      const virtualItem = virtualizer.getVirtualItems().find((item) => item.index === currentIndex)
 
-      const scrollLeft = thumbnailLeft - containerWidth / 2 + thumbnailWidth / 2
-      nextFrame(() => {
-        scrollContainer.scrollTo({
-          left: scrollLeft,
-          behavior: 'smooth',
+      if (virtualItem) {
+        // virtualItem.start is the actual measured start position
+        // virtualItem.size is the actual measured size
+        const thumbnailCenter = virtualItem.start + virtualItem.size / 2
+
+        // Center the thumbnail in the viewport
+        const scrollLeft = thumbnailCenter - scrollContainerWidth / 2
+
+        nextFrame(() => {
+          scrollContainer.scrollTo({
+            left: Math.max(0, scrollLeft),
+            behavior: 'smooth',
+          })
         })
-      })
+      } else {
+        // Fallback: calculate manually if virtual item not yet rendered
+        let thumbnailLeft = 0
+        for (let i = 0; i < currentIndex; i++) {
+          const photo = photos[i]
+          const width = thumbnailHeight * photo.aspectRatio
+          thumbnailLeft += width
+        }
+
+        const currentPhoto = photos[currentIndex]
+        const currentThumbnailWidth = thumbnailHeight * currentPhoto.aspectRatio
+        const thumbnailCenter = thumbnailLeft + currentThumbnailWidth / 2
+        const scrollLeft = thumbnailCenter - scrollContainerWidth / 2
+
+        nextFrame(() => {
+          scrollContainer.scrollTo({
+            left: Math.max(0, scrollLeft),
+            behavior: 'smooth',
+          })
+        })
+      }
     }
-  }, [currentIndex, isMobile, scrollContainerWidth])
+  }, [currentIndex, isMobile, scrollContainerWidth, photos, thumbnailHeight, virtualizer])
 
   // 处理鼠标滚轮事件，映射为横向滚动
   useEffect(() => {
@@ -91,23 +121,9 @@ export const GalleryThumbnail: FC<{
     }
   }, [])
 
-  // Virtual scrolling optimization: only render thumbnails near the visible area
-  // Calculate the range of thumbnails to render
-  const renderRange = 30 // Render 30 items before and after current index, ~60 total
-  const startIndex = Math.max(0, currentIndex - renderRange)
-  const endIndex = Math.min(photos.length - 1, currentIndex + renderRange)
-
-  // Calculate placeholder widths
-  const thumbnailWidth = isMobile ? thumbnailSize.mobile : thumbnailSize.desktop
-  const gapSize = isMobile ? thumbnailGapSize.mobile : thumbnailGapSize.desktop
-  const itemWidth = thumbnailWidth + gapSize
-
-  const leftPlaceholderWidth = startIndex > 0 ? startIndex * itemWidth : 0
-  const rightPlaceholderWidth = endIndex < photos.length - 1 ? (photos.length - 1 - endIndex) * itemWidth : 0
-
   return (
     <m.div
-      className="pb-safe border-accent/20 bg-material-medium z-10 shrink-0 border-t backdrop-blur-2xl"
+      className="pb-safe bg-material-medium z-10 shrink-0 backdrop-blur-2xl"
       initial={{ y: 100, opacity: 0 }}
       animate={{
         y: visible ? 0 : 48,
@@ -128,65 +144,119 @@ export const GalleryThumbnail: FC<{
           background: 'linear-gradient(to top, color-mix(in srgb, var(--color-accent) 5%, transparent), transparent)',
         }}
       />
-      <div
-        ref={scrollContainerRef}
-        className="scrollbar-none relative z-10 flex overflow-x-auto"
-        style={{
-          gap: isMobile ? thumbnailGapSize.mobile : thumbnailGapSize.desktop,
-          padding: isMobile ? thumbnailPaddingSize.mobile : thumbnailPaddingSize.desktop,
-        }}
-      >
-        {/* Left placeholder */}
-        {leftPlaceholderWidth > 0 && (
-          <div
-            style={{
-              width: leftPlaceholderWidth,
-              flexShrink: 0,
-            }}
-          />
-        )}
+      <div ref={scrollContainerRef} className="scrollbar-none relative z-10 overflow-x-auto">
+        <div
+          style={{
+            height: `${thumbnailHeight}px`,
+            width: `${virtualizer.getTotalSize()}px`,
+            position: 'relative',
+          }}
+        >
+          {virtualizer.getVirtualItems().map((virtualItem) => {
+            const photo = photos[virtualItem.index]
+            const thumbnailWidth = thumbnailHeight * photo.aspectRatio
+            const isCurrent = virtualItem.index === currentIndex
 
-        {/* Only render thumbnails within visible range */}
-        {photos.slice(startIndex, endIndex + 1).map((photo, sliceIndex) => {
-          const index = startIndex + sliceIndex
-          return (
-            <button
-              type="button"
-              key={photo.id}
-              className={clsxm(
-                'contain-intrinsic-size relative shrink-0 overflow-hidden rounded-lg border-2 transition-all',
-                index === currentIndex
-                  ? 'scale-110 border-accent shadow-[0_0_20px_color-mix(in_srgb,var(--color-accent)_20%,transparent)]'
-                  : 'grayscale-50 border-accent/20 hover:border-accent hover:grayscale-0',
-              )}
-              style={
-                isMobile
-                  ? {
-                      width: thumbnailSize.mobile,
-                      height: thumbnailSize.mobile,
-                    }
-                  : {
-                      width: thumbnailSize.desktop,
-                      height: thumbnailSize.desktop,
-                    }
-              }
-              onClick={() => onIndexChange(index)}
-            >
-              {photo.thumbHash && <Thumbhash thumbHash={photo.thumbHash} className="size-fill absolute inset-0" />}
-              <img src={photo.thumbnailUrl} alt={photo.title} className="absolute inset-0 h-full w-full object-cover" />
-            </button>
-          )
-        })}
+            return (
+              <div
+                key={virtualItem.key}
+                data-index={virtualItem.index}
+                className="absolute top-0"
+                style={{
+                  height: `${thumbnailHeight}px`,
+                  width: `${thumbnailWidth}px`,
+                  transform: `translateX(${virtualItem.start}px)`,
+                }}
+              >
+                {!isMobile ? (
+                  <HoverCard openDelay={100} closeDelay={0}>
+                    <HoverCardTrigger asChild>
+                      <button
+                        type="button"
+                        className={clsxm(
+                          'contain-intrinsic-size h-full w-full overflow-hidden transition-all',
+                          'hover:grayscale-0',
+                          isCurrent
+                            ? 'scale-110 border-accent shadow-[0_0_20px_color-mix(in_srgb,var(--color-accent)_20%,transparent)]'
+                            : 'grayscale border-accent/20',
+                        )}
+                        onClick={() => onIndexChange(virtualItem.index)}
+                      >
+                        {photo.thumbHash && (
+                          <Thumbhash thumbHash={photo.thumbHash} className="size-fill absolute inset-0" />
+                        )}
+                        <img
+                          src={photo.thumbnailUrl}
+                          alt={photo.title}
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      </button>
+                    </HoverCardTrigger>
 
-        {/* Right placeholder */}
-        {rightPlaceholderWidth > 0 && (
-          <div
-            style={{
-              width: rightPlaceholderWidth,
-              flexShrink: 0,
-            }}
-          />
-        )}
+                    <HoverCardContent
+                      side="top"
+                      align="center"
+                      sideOffset={0}
+                      alignOffset={0}
+                      className="w-80 overflow-hidden rounded-none border-0 p-0 shadow-[8px_-9px_20px_13px_var(--color-accent)]"
+                    >
+                      <div className="relative">
+                        {/* Preview image */}
+                        <div
+                          className="relative w-full overflow-hidden"
+                          style={{ aspectRatio: photo.aspectRatio, height: 'auto' }}
+                        >
+                          {photo.thumbHash && (
+                            <Thumbhash thumbHash={photo.thumbHash} className="absolute inset-0 size-full" />
+                          )}
+                          <img
+                            src={photo.thumbnailUrl}
+                            alt={photo.title}
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                        </div>
+                        {/* Photo info overlay */}
+                        {(photo.title || photo.dateTaken) && (
+                          <div className="absolute right-0 bottom-0 left-0 bg-linear-to-t from-black/60 to-transparent p-3">
+                            {photo.title && (
+                              <div className="truncate text-sm font-medium text-white">{photo.title}</div>
+                            )}
+                            {photo.dateTaken && (
+                              <div className="mt-1 text-xs text-white/80">
+                                {new Date(photo.dateTaken).toLocaleDateString()}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
+                ) : (
+                  <button
+                    type="button"
+                    className={clsxm(
+                      'contain-intrinsic-size h-full w-full overflow-hidden transition-all',
+                      'hover:grayscale-0',
+                      isCurrent
+                        ? 'scale-110 border-accent shadow-[0_0_20px_color-mix(in_srgb,var(--color-accent)_20%,transparent)]'
+                        : 'grayscale border-accent/20',
+                    )}
+                    onClick={() => onIndexChange(virtualItem.index)}
+                  >
+                    {photo.thumbHash && (
+                      <Thumbhash thumbHash={photo.thumbHash} className="size-fill absolute inset-0" />
+                    )}
+                    <img
+                      src={photo.thumbnailUrl}
+                      alt={photo.title}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
     </m.div>
   )

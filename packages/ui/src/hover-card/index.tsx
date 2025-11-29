@@ -3,6 +3,8 @@ import * as HoverCardPrimitive from '@radix-ui/react-hover-card'
 import { m } from 'motion/react'
 import * as React from 'react'
 
+import { RootPortal } from '../portal'
+
 const HoverCard = HoverCardPrimitive.Root
 
 const HoverCardTrigger = HoverCardPrimitive.Trigger
@@ -16,7 +18,7 @@ const HoverCardContent = ({
 }: React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content> & {
   ref?: React.RefObject<React.ElementRef<typeof HoverCardPrimitive.Content> | null>
 }) => (
-  <HoverCardPrimitive.Portal>
+  <RootPortal>
     <HoverCardPrimitive.Content
       ref={ref}
       align={align}
@@ -59,7 +61,7 @@ const HoverCardContent = ({
         <div className="relative">{props.children}</div>
       </m.div>
     </HoverCardPrimitive.Content>
-  </HoverCardPrimitive.Portal>
+  </RootPortal>
 )
 HoverCardContent.displayName = HoverCardPrimitive.Content.displayName
 
