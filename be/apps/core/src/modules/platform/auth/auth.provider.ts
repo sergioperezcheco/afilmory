@@ -235,7 +235,8 @@ export class AuthProvider implements OnModuleInit {
           const tenant = await this.tenantService.getBySlug(tenantSlug)
           return tenant.tenant.id
         } catch {
-          return null
+          const holdingTenantId = await this.resolveFallbackTenantId()
+          return holdingTenantId
         }
       }
       return null
