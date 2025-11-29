@@ -1,4 +1,4 @@
-import { authUsers } from '@afilmory/db'
+import { authUsers, tenants } from '@afilmory/db'
 import { HttpContext } from '@afilmory/framework'
 import { DbAccessor } from 'core/database/database.provider'
 import { BizException, ErrorCode } from 'core/errors'
@@ -7,7 +7,7 @@ import type { SettingEntryInput } from 'core/modules/configuration/setting/setti
 import { SettingService } from 'core/modules/configuration/setting/setting.service'
 import type { SettingKeyType } from 'core/modules/configuration/setting/setting.type'
 import { SystemSettingService } from 'core/modules/configuration/system-setting/system-setting.service'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { injectable } from 'tsyringe'
 
 import { getTenantContext, isPlaceholderTenantContext } from '../tenant/tenant.context'
@@ -65,13 +65,24 @@ export class AuthRegistrationService {
     await this.systemSettings.ensureRegistrationAllowed()
 
     const tenantContext = getTenantContext()
-    const effectiveTenantContext = isPlaceholderTenantContext(tenantContext) ? null : tenantContext
+    const isPendingTenant = tenantContext ? isPlaceholderTenantContext(tenantContext) : false
+    const effectiveTenantContext = isPendingTenant ? null : tenantContext
     const account = input.account ? this.normalizeAccountInput(input.account) : null
     const useSessionAccount = input.useSessionAccount ?? false
     const sessionUser = this.getSessionUser()
 
     if (useSessionAccount && !sessionUser) {
       throw new BizException(ErrorCode.AUTH_UNAUTHORIZED, { message: '请先登录后再创建工作区' })
+    }
+
+    if (isPendingTenant && tenantContext) {
+      return await this.finalizePendingTenant({
+        tenantContext,
+        tenantInput: input.tenant,
+        settings: input.settings,
+        sessionUser,
+        useSessionAccount,
+      })
     }
 
     if (effectiveTenantContext) {
@@ -195,16 +206,117 @@ export class AuthRegistrationService {
         })
       }
 
-      const schema = SETTING_SCHEMAS[key as SettingKeyType]
+      const typedKey = key as SettingKeyType
+      const schema = SETTING_SCHEMAS[typedKey]
       const value = schema.parse(entry.value)
 
       normalized.push({
-        key: key as SettingKeyType,
+        key: typedKey,
         value,
-      })
+      } as SettingEntryInput)
     }
 
     return normalized
+  }
+
+  private async finalizePendingTenant(params: {
+    tenantContext: { tenant: TenantRecord; requestedSlug?: string | null }
+    tenantInput?: RegisterTenantInput['tenant']
+    settings?: RegisterTenantInput['settings']
+    sessionUser: AuthSession['user'] | null
+    useSessionAccount: boolean
+  }): Promise<RegisterTenantResult> {
+    const { tenantContext, tenantInput, settings, sessionUser, useSessionAccount } = params
+    if (!tenantInput) {
+      throw new BizException(ErrorCode.COMMON_BAD_REQUEST, { message: '租户信息不能为空' })
+    }
+    if (!useSessionAccount || !sessionUser) {
+      throw new BizException(ErrorCode.COMMON_BAD_REQUEST, {
+        message: '请通过已登录账号完成工作区初始化。',
+      })
+    }
+
+    const tenantName = tenantInput.name?.trim() ?? ''
+    if (!tenantName) {
+      throw new BizException(ErrorCode.COMMON_BAD_REQUEST, { message: '租户名称不能为空' })
+    }
+
+    const currentSlug = tenantContext.tenant.slug?.toLowerCase() ?? ''
+    const requestedSlug =
+      tenantInput.slug?.trim().toLowerCase() ?? tenantContext.requestedSlug?.toLowerCase() ?? currentSlug
+    if (!requestedSlug || requestedSlug !== currentSlug) {
+      throw new BizException(ErrorCode.COMMON_BAD_REQUEST, {
+        message: '当前子域与请求的空间标识不匹配，无法完成注册。',
+      })
+    }
+
+    const sessionUserId = (sessionUser as { id?: string } | null)?.id
+    if (!sessionUserId) {
+      throw new BizException(ErrorCode.AUTH_UNAUTHORIZED, { message: '当前登录状态无效，请重新登录。' })
+    }
+
+    const db = this.dbAccessor.get()
+    const [existingUser] = await db
+      .select({ tenantId: authUsers.tenantId })
+      .from(authUsers)
+      .where(eq(authUsers.id, sessionUserId))
+      .limit(1)
+    if (existingUser?.tenantId && existingUser.tenantId !== tenantContext.tenant.id) {
+      throw new BizException(ErrorCode.COMMON_BAD_REQUEST, {
+        message: '当前账号已属于其它工作区，无法重复注册。',
+      })
+    }
+
+    const now = new Date().toISOString()
+    const [updatedTenant] = await db
+      .update(tenants)
+      .set({
+        name: tenantName,
+        status: 'active',
+        updatedAt: now,
+      })
+      .where(and(eq(tenants.id, tenantContext.tenant.id), eq(tenants.status, 'pending')))
+      .returning()
+
+    if (!updatedTenant) {
+      throw new BizException(ErrorCode.COMMON_CONFLICT, {
+        message: '该空间已被其他用户绑定，请联系管理员。',
+      })
+    }
+
+    await db
+      .update(authUsers)
+      .set({
+        tenantId: updatedTenant.id,
+        role: 'admin',
+        name: sessionUser.name ?? sessionUser.email ?? 'Workspace Admin',
+      })
+      .where(eq(authUsers.id, sessionUserId))
+
+    const normalizedSettings = this.normalizeSettings(settings)
+    if (normalizedSettings.length > 0) {
+      await this.settingService.setMany(
+        normalizedSettings.map((entry) => ({
+          ...entry,
+          options: {
+            tenantId: updatedTenant.id,
+            isSensitive: false,
+          },
+        })),
+      )
+    }
+
+    const response = new Response(JSON.stringify({ tenant: updatedTenant }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    return {
+      response,
+      tenant: updatedTenant,
+      accountId: sessionUserId,
+      success: true,
+    }
   }
 
   private async registerNewTenant(
@@ -347,8 +459,8 @@ export class AuthRegistrationService {
     }
 
     if (record.tenantId) {
-      const isPlaceholder = await this.tenantService.isPlaceholderTenantId(record.tenantId)
-      if (!isPlaceholder) {
+      const isPending = await this.tenantService.isPendingTenantId(record.tenantId)
+      if (!isPending) {
         throw new BizException(ErrorCode.COMMON_BAD_REQUEST, { message: '当前账号已属于其它工作区，无法重复注册。' })
       }
     }

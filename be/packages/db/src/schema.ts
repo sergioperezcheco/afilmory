@@ -29,7 +29,7 @@ const snowflakeId = createSnowflakeId('id').primaryKey()
 
 export const userRoleEnum = pgEnum('user_role', ['user', 'admin', 'superadmin'])
 
-export const tenantStatusEnum = pgEnum('tenant_status', ['active', 'inactive', 'suspended'])
+export const tenantStatusEnum = pgEnum('tenant_status', ['pending', 'active', 'inactive', 'suspended'])
 export const tenantDomainStatusEnum = pgEnum('tenant_domain_status', ['pending', 'verified', 'disabled'])
 export const photoSyncStatusEnum = pgEnum('photo_sync_status', ['pending', 'synced', 'conflict'])
 export const commentStatusEnum = pgEnum('comment_status', ['pending', 'approved', 'rejected', 'hidden'])

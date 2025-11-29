@@ -6,6 +6,7 @@ import { BypassResponseTransform } from 'core/interceptors/response-transform.de
 import { SettingKeys } from './setting.constant'
 import type { GetSettingsBodyDto } from './setting.dto'
 import { DeleteSettingDto, GetSettingDto, SetSettingDto } from './setting.dto'
+import type { SettingEntryInput } from './setting.service'
 import { SettingService } from './setting.service'
 
 @Controller('settings')
@@ -48,7 +49,7 @@ export class SettingController {
 
   @Post('/')
   async set(@Body() { entries }: SetSettingDto) {
-    await this.settingService.setMany(entries)
+    await this.settingService.setMany(entries as SettingEntryInput[])
     return { updated: entries }
   }
 

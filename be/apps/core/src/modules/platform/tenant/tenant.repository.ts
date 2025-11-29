@@ -36,6 +36,7 @@ export class TenantRepository {
     slug: string
     planId?: BillingPlanId
     storagePlanId?: string | null
+    status?: TenantAggregate['tenant']['status']
   }): Promise<TenantAggregate> {
     const db = this.dbAccessor.get()
     const tenantId = generateId()
@@ -45,7 +46,7 @@ export class TenantRepository {
       slug: payload.slug,
       planId: payload.planId ?? 'free',
       storagePlanId: payload.storagePlanId ?? null,
-      status: 'active',
+      status: payload.status ?? 'active',
     }
 
     await db.insert(tenants).values(tenantRecord)

@@ -19,7 +19,6 @@ import { StoragePlanService } from 'core/modules/platform/billing/storage-plan.s
 import type { Context } from 'hono'
 import { injectable } from 'tsyringe'
 
-import { PLACEHOLDER_TENANT_SLUG } from '../tenant/tenant.constants'
 import { TenantService } from '../tenant/tenant.service'
 import { extractTenantSlugFromHost } from '../tenant/tenant-host.utils'
 import type { AuthModuleOptions, SocialProviderOptions, SocialProvidersConfig } from './auth.config'
@@ -33,7 +32,6 @@ const logger = createLogger('Auth')
 @injectable()
 export class AuthProvider implements OnModuleInit {
   private instances = new Map<string, Promise<BetterAuthInstance>>()
-  private placeholderTenantId: string | null = null
 
   constructor(
     private readonly config: AuthConfig,
@@ -83,16 +81,20 @@ export class AuthProvider implements OnModuleInit {
     return sanitizedSlug ? `better-auth-${sanitizedSlug}` : 'better-auth'
   }
 
-  private async resolveFallbackTenantId(): Promise<string | null> {
-    if (this.placeholderTenantId) {
-      return this.placeholderTenantId
+  private async resolveTenantIdOrProvision(tenantSlug: string | null): Promise<string | null> {
+    const tenantIdFromContext = this.resolveTenantIdFromContext()
+    if (tenantIdFromContext) {
+      return tenantIdFromContext
     }
+    if (!tenantSlug) {
+      return null
+    }
+
     try {
-      const placeholder = await this.tenantService.ensurePlaceholderTenant()
-      this.placeholderTenantId = placeholder.tenant.id
-      return this.placeholderTenantId
+      const aggregate = await this.tenantService.ensurePendingTenant(tenantSlug)
+      return aggregate.tenant.id
     } catch (error) {
-      logger.error('Failed to ensure placeholder tenant', error)
+      logger.error(`Failed to provision tenant for slug=${tenantSlug}`, error)
       return null
     }
   }
@@ -225,22 +227,7 @@ export class AuthProvider implements OnModuleInit {
     // This ensures that user lookups (by email) and account lookups (by provider)
     // are scoped to the current tenant, allowing the same email/social account
     // to exist as different users in different tenants
-    const getTenantId = async () => {
-      const tenantId = this.resolveTenantIdFromContext()
-      if (tenantId) {
-        return tenantId
-      }
-      if (tenantSlug) {
-        try {
-          const tenant = await this.tenantService.getBySlug(tenantSlug)
-          return tenant.tenant.id
-        } catch {
-          const holdingTenantId = await this.resolveFallbackTenantId()
-          return holdingTenantId
-        }
-      }
-      return null
-    }
+    const ensureTenantId = async () => await this.resolveTenantIdOrProvision(tenantSlug)
 
     return betterAuth({
       database: tenantAwareDrizzleAdapter(
@@ -255,7 +242,7 @@ export class AuthProvider implements OnModuleInit {
             subscription: creemSubscriptions,
           },
         },
-        getTenantId,
+        ensureTenantId,
       ),
       socialProviders: socialProviders as any,
       emailAndPassword: { enabled: true },
@@ -283,27 +270,18 @@ export class AuthProvider implements OnModuleInit {
         user: {
           create: {
             before: async (user) => {
-              const tenantId = this.resolveTenantIdFromContext()
-              if (tenantId) {
-                return {
-                  data: {
-                    ...user,
-                    tenantId,
-                    role: user.role ?? 'guest',
-                  },
-                }
-              }
-
-              const fallbackTenantId = await this.resolveFallbackTenantId()
-              if (!fallbackTenantId) {
-                return { data: user }
+              const tenantId = await ensureTenantId()
+              if (!tenantId) {
+                throw new APIError('BAD_REQUEST', {
+                  message: 'Missing tenant context during account creation.',
+                })
               }
 
               return {
                 data: {
                   ...user,
-                  tenantId: fallbackTenantId,
-                  role: user.role ?? 'guest',
+                  tenantId,
+                  role: user.role ?? 'user',
                 },
               }
             },
@@ -313,7 +291,7 @@ export class AuthProvider implements OnModuleInit {
           create: {
             before: async (session) => {
               const tenantId = this.resolveTenantIdFromContext()
-              const fallbackTenantId = tenantId ?? session.tenantId ?? (await this.resolveFallbackTenantId())
+              const fallbackTenantId = tenantId ?? session.tenantId ?? (await ensureTenantId())
               return {
                 data: {
                   ...session,
@@ -327,7 +305,7 @@ export class AuthProvider implements OnModuleInit {
           create: {
             before: async (account) => {
               const tenantId = this.resolveTenantIdFromContext()
-              const resolvedTenantId = tenantId ?? (await this.resolveFallbackTenantId())
+              const resolvedTenantId = tenantId ?? (await ensureTenantId())
               if (!resolvedTenantId) {
                 return { data: account }
               }
@@ -409,10 +387,7 @@ export class AuthProvider implements OnModuleInit {
     const fallbackHost = options.baseDomain.trim().toLowerCase()
     const requestedHost = (endpoint.host ?? fallbackHost).trim().toLowerCase()
     const tenantSlugFromContext = this.resolveTenantSlugFromContext()
-    const tenantSlug =
-      tenantSlugFromContext && tenantSlugFromContext !== PLACEHOLDER_TENANT_SLUG
-        ? tenantSlugFromContext
-        : (extractTenantSlugFromHost(requestedHost, options.baseDomain) ?? tenantSlugFromContext)
+    const tenantSlug = tenantSlugFromContext ?? extractTenantSlugFromHost(requestedHost, options.baseDomain)
     const host = this.applyTenantSlugToHost(requestedHost || fallbackHost, fallbackHost, tenantSlug)
     const protocol = this.determineProtocol(host, endpoint.protocol)
 

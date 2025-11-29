@@ -52,5 +52,3 @@ export function isTenantSlugReserved(slug: string): boolean {
 }
 
 export const DEFAULT_BASE_DOMAIN = 'afilmory.art'
-
-export const PLACEHOLDER_TENANT_SLUG = 'holding'

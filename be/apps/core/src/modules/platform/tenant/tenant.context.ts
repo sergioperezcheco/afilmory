@@ -1,7 +1,6 @@
 import { HttpContext } from '@afilmory/framework'
 import { BizException, ErrorCode } from 'core/errors'
 
-import { PLACEHOLDER_TENANT_SLUG } from './tenant.constants'
 import type { TenantContext } from './tenant.types'
 
 export function getTenantContext<TRequired extends boolean = false>(options?: {
@@ -22,9 +21,8 @@ export function isPlaceholderTenantContext(context?: TenantContext | null): bool
   if (!context) {
     return false
   }
-  if (context.isPlaceholder) {
-    return true
+  if (typeof context.isPlaceholder === 'boolean') {
+    return context.isPlaceholder
   }
-  const slug = context.tenant.slug?.toLowerCase()
-  return slug === PLACEHOLDER_TENANT_SLUG
+  return context.tenant.status !== 'active'
 }

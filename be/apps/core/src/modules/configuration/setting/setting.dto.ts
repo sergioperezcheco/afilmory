@@ -2,6 +2,7 @@ import { createZodDto } from '@afilmory/framework'
 import { z } from 'zod'
 
 import { SETTING_SCHEMAS, SettingKeys } from './setting.constant'
+import type { SettingEntryInput } from './setting.service'
 
 const keySchema = z.enum(SettingKeys)
 
@@ -17,7 +18,7 @@ const normalizeEntries = z
     return entries.map((entry) => ({
       key: entry.key,
       value: SETTING_SCHEMAS[entry.key].parse(entry.value),
-    }))
+    })) as SettingEntryInput[]
   })
 
 const keysInputSchema = z

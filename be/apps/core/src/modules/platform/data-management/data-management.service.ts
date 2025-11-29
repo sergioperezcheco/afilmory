@@ -18,7 +18,7 @@ import { SystemSettingService } from 'core/modules/configuration/system-setting/
 import { PhotoStorageService } from 'core/modules/content/photo/storage/photo-storage.service'
 import { BILLING_USAGE_EVENT } from 'core/modules/platform/billing/billing.constants'
 import { BillingUsageService } from 'core/modules/platform/billing/billing-usage.service'
-import { PLACEHOLDER_TENANT_SLUG, ROOT_TENANT_SLUG } from 'core/modules/platform/tenant/tenant.constants'
+import { ROOT_TENANT_SLUG } from 'core/modules/platform/tenant/tenant.constants'
 import { requireTenantContext } from 'core/modules/platform/tenant/tenant.context'
 import { eq } from 'drizzle-orm'
 import { injectable } from 'tsyringe'
@@ -72,9 +72,9 @@ export class DataManagementService {
       })
     }
 
-    if (tenantSlug === ROOT_TENANT_SLUG || tenantSlug === PLACEHOLDER_TENANT_SLUG) {
+    if (tenantSlug === ROOT_TENANT_SLUG || tenant.tenant.status === 'pending') {
       throw new BizException(ErrorCode.AUTH_FORBIDDEN, {
-        message: '系统租户无法通过此操作删除。',
+        message: '系统租户或未完成初始化的工作区无法通过此操作删除。',
       })
     }
 

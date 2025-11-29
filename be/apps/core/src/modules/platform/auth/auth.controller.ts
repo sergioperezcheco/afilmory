@@ -13,7 +13,6 @@ import { SystemSettingService } from 'core/modules/configuration/system-setting/
 import { eq } from 'drizzle-orm'
 import type { Context } from 'hono'
 
-import { PLACEHOLDER_TENANT_SLUG } from '../tenant/tenant.constants'
 import { getTenantContext, isPlaceholderTenantContext } from '../tenant/tenant.context'
 import { TenantService } from '../tenant/tenant.service'
 import type { TenantRecord } from '../tenant/tenant.types'
@@ -127,10 +126,10 @@ export class AuthController {
       const { tenantId } = authContext.user as { tenantId?: string | null }
       if (tenantId) {
         try {
-          const aggregate = await this.tenantService.getById(tenantId)
-          const isPlaceholder = aggregate.tenant.slug === PLACEHOLDER_TENANT_SLUG
+          const aggregate = await this.tenantService.getById(tenantId, { allowPending: true })
+          const isPlaceholder = aggregate.tenant.status !== 'active'
           const existingRequestedSlug = tenantContext?.requestedSlug ?? null
-          const derivedRequestedSlug = existingRequestedSlug ?? (isPlaceholder ? null : (aggregate.tenant.slug ?? null))
+          const derivedRequestedSlug = existingRequestedSlug ?? aggregate.tenant.slug ?? null
           tenantContext = {
             tenant: aggregate.tenant,
             isPlaceholder,

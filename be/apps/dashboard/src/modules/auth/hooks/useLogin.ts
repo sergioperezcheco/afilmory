@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { useSetAuthUser } from '~/atoms/auth'
+import { ROUTE_PATHS } from '~/constants/routes'
 import { AUTH_SESSION_QUERY_KEY, fetchSession } from '~/modules/auth/api/session'
 import { buildRootTenantUrl, buildTenantUrl, getTenantSlugFromHost } from '~/modules/auth/utils/domain'
 
@@ -55,7 +56,12 @@ export function useLogin() {
       const { tenant } = session
       const isSuperAdmin = session.user.role === 'superadmin'
 
-      if (tenant && !tenant.isPlaceholder && tenant.slug) {
+      if (tenant?.isPlaceholder) {
+        navigate(ROUTE_PATHS.WELCOME, { replace: true })
+        return
+      }
+
+      if (tenant && tenant.slug) {
         const currentSlug = getTenantSlugFromHost(window.location.hostname)
         if (!isSuperAdmin && tenant.slug !== currentSlug) {
           try {

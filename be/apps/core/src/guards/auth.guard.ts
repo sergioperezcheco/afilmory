@@ -6,7 +6,6 @@ import { applyTenantIsolationContext, DbAccessor } from 'core/database/database.
 import { BizException, ErrorCode } from 'core/errors'
 import type { AuthSession } from 'core/modules/platform/auth/auth.provider'
 import { getTenantContext, isPlaceholderTenantContext } from 'core/modules/platform/tenant/tenant.context'
-import { TenantService } from 'core/modules/platform/tenant/tenant.service'
 import type { TenantContext } from 'core/modules/platform/tenant/tenant.types'
 import { eq } from 'drizzle-orm'
 import { injectable } from 'tsyringe'
@@ -18,10 +17,7 @@ import { logger } from '../helpers/logger.helper'
 export class AuthGuard implements CanActivate {
   private readonly log = logger.extend('AuthGuard')
 
-  constructor(
-    private readonly dbAccessor: DbAccessor,
-    private readonly tenantService: TenantService,
-  ) {}
+  constructor(private readonly dbAccessor: DbAccessor) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const store = context.getContext()
@@ -51,11 +47,7 @@ export class AuthGuard implements CanActivate {
   }
 
   private async requireTenantContext(method: string, path: string): Promise<TenantContext> {
-    let tenantContext = getTenantContext()
-    if (!tenantContext && this.isPlaceholderAllowedPath(path)) {
-      tenantContext = (await this.createPlaceholderContext(method, path)) as TenantContext
-    }
-
+    const tenantContext = getTenantContext()
     if (!tenantContext) {
       this.log.warn(`Tenant context not resolved for ${method} ${path}`)
       throw new BizException(ErrorCode.AUTH_TENANT_NOT_FOUND_GUARD)
@@ -150,21 +142,5 @@ export class AuthGuard implements CanActivate {
     }
 
     return false
-  }
-
-  private async createPlaceholderContext(method: string, path: string): Promise<TenantContext | null> {
-    try {
-      const placeholder = await this.tenantService.ensurePlaceholderTenant()
-      const context: TenantContext = {
-        tenant: placeholder.tenant,
-        isPlaceholder: true,
-      }
-      HttpContext.setValue('tenant', context)
-      this.log.verbose(`Placeholder tenant context injected for ${method} ${path}`)
-      return context
-    } catch (error) {
-      this.log.error('Failed to inject placeholder tenant context', error)
-      return null
-    }
   }
 }
