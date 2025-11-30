@@ -41,9 +41,9 @@ export const PageHeaderRight = () => {
     (gallerySetting.selectedRatings !== null ? 1 : 0)
 
   return (
-    <div className="flex items-center gap-1 rounded-lg bg-white/5 lg:gap-1.5">
+    <div className="flex items-center gap-1 lg:gap-1.5">
       {/* Action Buttons */}
-      <div className="border-border flex items-center gap-1 rounded-lg border-[0.5px]">
+      <div className="bg-material-medium/40 flex items-center gap-1 rounded-lg">
         <ActionIconButton
           icon="i-mingcute-search-line"
           title={t('action.search.unified.title')}
@@ -81,7 +81,7 @@ export const PageHeaderRight = () => {
 
       {/* Auth Section - Only show when useCloud is true */}
       {injectConfig.useCloud && (
-        <div className="border-border flex items-center gap-1 rounded-full border-[0.5px]">
+        <div className="bg-material-medium/40 flex items-center gap-1 rounded-lg">
           {sessionUser ? <UserMenuButton user={sessionUser} /> : <LoginButton />}
         </div>
       )}
@@ -106,7 +106,7 @@ const DesktopViewButton = ({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="relative flex size-7 items-center justify-center rounded text-white/60 transition-all duration-200 hover:bg-white/10 hover:text-white lg:size-8"
+          className="relative flex size-7 items-center justify-center rounded-full text-white/60 transition-all duration-200 hover:bg-white/10 hover:text-white lg:size-8"
           title={title}
         >
           <i className={`${icon} text-sm lg:text-base`} />
@@ -187,7 +187,7 @@ const LoginButton = () => {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="relative flex size-7 items-center justify-center rounded-full text-white/60 transition-all duration-200 hover:bg-white/10 hover:text-white lg:size-8"
+          className="relative flex size-7 items-center justify-center rounded text-white/60 transition-all duration-200 hover:bg-white/10 hover:text-white lg:size-8"
           title={t('action.login')}
         >
           <i className="i-lucide-log-in text-sm lg:text-base" />
