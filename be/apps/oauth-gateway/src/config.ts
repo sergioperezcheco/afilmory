@@ -40,9 +40,15 @@ const envSchema = z.object({
   STATE_SECRET: z
     .string()
     .trim()
-    .min(1, { message: 'AUTH_GATEWAY_STATE_SECRET or CONFIG_ENCRYPTION_KEY is required for state decoding.' })
-    .default(process.env.AUTH_GATEWAY_STATE_SECRET ?? process.env.CONFIG_ENCRYPTION_KEY ?? ''),
+    .min(1, { message: 'AUTH_GATEWAY_STATE_SECRET or CONFIG_ENCRYPTION_KEY is required for state decoding.' }),
 })
+
+const resolvedStateSecret = process.env.AUTH_GATEWAY_STATE_SECRET ?? process.env.CONFIG_ENCRYPTION_KEY
+if (!resolvedStateSecret) {
+  throw new Error(
+    '[oauth-gateway] AUTH_GATEWAY_STATE_SECRET (or CONFIG_ENCRYPTION_KEY) is required to decode OAuth state.',
+  )
+}
 
 const parsed = envSchema.parse({
   HOST: process.env.AUTH_GATEWAY_HOST ?? process.env.HOST,
@@ -52,7 +58,7 @@ const parsed = envSchema.parse({
   CALLBACK_BASE_PATH: process.env.AUTH_GATEWAY_CALLBACK_BASE_PATH,
   ALLOW_CUSTOM_HOST: process.env.AUTH_GATEWAY_ALLOW_CUSTOM_HOST,
   ROOT_SLUG: process.env.AUTH_GATEWAY_ROOT_SLUG,
-  STATE_SECRET: process.env.AUTH_GATEWAY_STATE_SECRET ?? process.env.CONFIG_ENCRYPTION_KEY,
+  STATE_SECRET: resolvedStateSecret,
 })
 
 export const gatewayConfig = {
