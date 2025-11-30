@@ -81,7 +81,7 @@ export const PageHeaderRight = () => {
 
       {/* Auth Section - Only show when useCloud is true */}
       {injectConfig.useCloud && (
-        <div className="bg-material-medium/40 flex items-center gap-1 rounded-lg">
+        <div className={`bg-material-medium/40 flex items-center gap-1 ${sessionUser ? 'rounded-full' : 'rounded-lg'}`}>
           {sessionUser ? <UserMenuButton user={sessionUser} /> : <LoginButton />}
         </div>
       )}
