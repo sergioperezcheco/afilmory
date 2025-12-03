@@ -2,7 +2,7 @@
   "name": "@afilmory/core",
   "type": "module",
   "version": "1.0.0",
-  "packageManager": "pnpm@10.18.0",
+  "packageManager": "pnpm@10.24.0",
   "author": "Innei",
   "main": "index.ts",
   "scripts": {

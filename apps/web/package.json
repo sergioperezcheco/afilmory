@@ -2,7 +2,7 @@
   "name": "@afilmory/web",
   "type": "module",
   "version": "0.0.1",
-  "packageManager": "pnpm@10.18.1",
+  "packageManager": "pnpm@10.24.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/Afilmory/Afilmory"
@@ -50,7 +50,7 @@
     "i18next-browser-languagedetector": "8.2.0",
     "immer": "11.0.0",
     "jotai": "2.15.1",
-    "maplibre-gl": "^5.13.0",
+    "maplibre-gl": "^5.14.0",
     "masonic": "4.1.0",
     "motion": "12.23.24",
     "ofetch": "1.5.1",

@@ -2,7 +2,7 @@
   "name": "@afilmory/ssr",
   "type": "module",
   "version": "1.0.0",
-  "packageManager": "pnpm@10.18.1",
+  "packageManager": "pnpm@10.24.0",
   "description": "",
   "author": "Innei",
   "main": "index.js",
