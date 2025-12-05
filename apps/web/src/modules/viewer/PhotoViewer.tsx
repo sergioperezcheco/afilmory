@@ -19,6 +19,7 @@ import { PhotoInspector } from '~/modules/inspector/PhotoInspector'
 import { ShareModal } from '~/modules/social/ShareModal'
 import type { PhotoManifest } from '~/types/photo'
 
+import { ReactionRail } from '../social'
 import { PhotoViewerTransitionPreview } from './animations/PhotoViewerTransitionPreview'
 import { usePhotoViewerTransitions } from './animations/usePhotoViewerTransitions'
 import { GalleryThumbnail } from './GalleryThumbnail'
@@ -206,7 +207,7 @@ export const PhotoViewer = ({
             <div className={`flex size-full ${isMobile ? 'flex-col' : 'flex-row'}`}>
               <div className="z-1 flex min-h-0 min-w-0 flex-1 flex-col">
                 <m.div
-                  className="group relative flex min-h-0 min-w-0 flex-1"
+                  className="group/photo-viewer relative flex min-h-0 min-w-0 flex-1"
                   animate={{ opacity: isViewerContentVisible ? 1 : 0 }}
                   transition={Spring.presets.snappy}
                 >
@@ -301,6 +302,7 @@ export const PhotoViewer = ({
                       const hideCurrentImage = isEntryAnimating && isCurrentImage
                       return (
                         <SwiperSlide key={photo.id} className="flex items-center justify-center" virtualIndex={index}>
+                          <ReactionRail photoId={photo.id} />
                           <m.div
                             initial={{ opacity: 0.5, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -359,7 +361,7 @@ export const PhotoViewer = ({
                       {currentIndex > 0 && (
                         <button
                           type="button"
-                          className={`bg-material-medium absolute top-1/2 left-4 z-20 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-white opacity-0 backdrop-blur-sm duration-200 group-hover:opacity-100 hover:bg-black/40`}
+                          className={`bg-material-medium absolute top-1/2 left-4 z-20 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-white opacity-0 backdrop-blur-sm duration-200 group-hover/photo-viewer:opacity-100 hover:bg-black/40`}
                           onClick={handlePrevious}
                         >
                           <i className={`i-mingcute-left-line text-xl`} />
@@ -369,7 +371,7 @@ export const PhotoViewer = ({
                       {currentIndex < photos.length - 1 && (
                         <button
                           type="button"
-                          className={`bg-material-medium absolute top-1/2 right-4 z-20 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-white opacity-0 backdrop-blur-sm duration-200 group-hover:opacity-100 hover:bg-black/40`}
+                          className={`bg-material-medium absolute top-1/2 right-4 z-20 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-white opacity-0 backdrop-blur-sm duration-200 group-hover/photo-viewer:opacity-100 hover:bg-black/40`}
                           onClick={handleNext}
                         >
                           <i className={`i-mingcute-right-line text-xl`} />
