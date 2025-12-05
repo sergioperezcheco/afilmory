@@ -59,6 +59,12 @@ export const Maplibre = ({
   const [viewState, setViewState] = useState(initialViewState)
   const [isMapLoaded, setIsMapLoaded] = useState(false)
   const [hasInitialFitCompleted, setHasInitialFitCompleted] = useState(false)
+  const projection = useMemo(
+    () => ({
+      type: siteConfig.mapProjection ?? 'mercator',
+    }),
+    [siteConfig.mapProjection],
+  )
 
   // Handle marker click - only call the external callback
   const handleMarkerClick = useCallback(
@@ -180,13 +186,6 @@ export const Maplibre = ({
   // 当地图加载完成时触发适配
   const handleMapLoad = useCallback(() => {
     setIsMapLoaded(true)
-    if (mapRef?.current?.getMap) {
-      const map = mapRef.current.getMap()
-      const projectionType = siteConfig.mapProjection || 'mercator'
-      map.setProjection({
-        type: projectionType,
-      })
-    }
   }, [])
 
   // 当标记点变化时，重新适配边界
@@ -207,6 +206,7 @@ export const Maplibre = ({
         {...viewState}
         style={{ width: '100%', height: '100%' }}
         mapStyle={getMapStyle()}
+        projection={projection}
         attributionControl={false}
         interactiveLayerIds={geoJsonData ? ['data'] : undefined}
         onClick={onGeoJsonClick}
