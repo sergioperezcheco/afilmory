@@ -267,11 +267,13 @@ export class ClusterPool<T> extends EventEmitter {
       // 首次准备就绪时发送初始化数据，但不立即标记为 ready
       if (this.sharedData) {
         // 使用 v8.serialize 序列化数据以保持类型完整性
+        // 注意: 排除 plugins 属性，因为其中包含函数无法序列化
+        const { plugins: _, ...serializableConfig } = this.sharedData.builderConfig
         const serializedBuffer = serialize({
           existingManifestMap: this.sharedData.existingManifestMap,
           livePhotoMap: this.sharedData.livePhotoMap,
           imageObjects: this.sharedData.imageObjects,
-          builderConfig: this.sharedData.builderConfig,
+          builderConfig: { ...serializableConfig, plugins: [] },
         })
 
         // 将 Buffer 转换为数组以通过 IPC 传输
