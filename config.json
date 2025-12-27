@@ -1,0 +1,29 @@
+{
+  "name": "Checo's Afilmory",
+  "title": "Checo's Afilmory",
+  "description": "Capturing beautiful moments in life, documenting daily warmth and emotions through my lens.",
+  "url": "https://photos.bext.top/",
+  "accentColor": "#007bff",
+  "author": {
+    "name": "checo",
+    "url": "https://home.checo.cc/",
+    "avatar": "https://cdn.jsdelivr.net/gh/Innei/static@master/avatar.png"
+  },
+  "social": {
+    "github": "",
+    "twitter": ""
+  },
+  "feed": {
+    "folo": {
+      "challenge": {
+        "feedId": "",
+        "userId": ""
+      }
+    }
+  },
+  "map": [
+    "maplibre"
+  ],
+  "mapStyle": "builtin",
+  "mapProjection": "mercator"
+}
